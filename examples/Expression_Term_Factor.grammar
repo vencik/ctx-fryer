@@ -1,0 +1,71 @@
+Meta
+    label  = Expression/Factor/Term
+    author = Vaclav Krpec
+
+    Description
+        Classic gramatic construction for defining language
+        of algebraic expressions with addition and multiplication,
+        honouring of priorities and left-to-right association.
+    DescriptionEnd
+
+    TargetLanguages
+        C
+    TargetLanguagesEnd
+MetaEnd
+
+TerminalSymbols
+    number = /[-+]?\d+(\.\d+([eE][-+]?\d+)?)?/
+    add    = /\+/
+    mul    = /\*/
+    lpar   = /\(/
+    rpar   = /\)/
+TerminalSymbolsEnd
+
+Rules
+    addition       :   E => E add F
+    factor_is_expr :   E => F
+    multiplication :   F => F mul T
+    term_is_factor :   F => T
+    parentheses    :   T => lpar E rpar
+    number_is_term :   T => number
+RulesEnd
+
+Attributes
+    # Number attributes
+    number::value = str2num(token)
+
+    # Expression attributes
+    addition       :   $0.value = sum($1.value, $3.value)
+    factor_is_expr :   $0.value = $1.value
+
+    # Factor attributes
+    multiplication :   $0.value = mul($1.value, $3.value)
+    term_is_factor :   $0.value = $1.value
+
+    # Term attributes
+    parentheses    :   $0.value = $2.value
+    number_is_term :   $0.value = $1.value
+AttributesEnd
+
+UnitTest
+    TestCase
+        label      = Trivial expression
+        accept     = yes
+        word       = "1+1"
+        derivation = 1 4 6 2 4 6
+    TestCaseEnd
+
+    TestCase
+        label      = Real number in parentheses
+        accept     = yes
+        word       = "(2.345e-6)"
+        derivation = 2 4 5 2 4 6
+    TestCaseEnd
+
+    TestCase
+        label      = num * ( num + num )
+        accept     = yes
+        word       = "5*(2+3)"
+        derivation = 2 3 5 1 4 6 2 4 6 4 6
+    TestCaseEnd
+UnitTestEnd

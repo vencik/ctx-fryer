@@ -1,0 +1,20 @@
+<!ELEMENT fsa (description, state*)>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT state (description, accepts*, branch*)>
+<!ATTLIST state id ID #REQUIRED>
+<!ELEMENT accepts (#PCDATA)>
+<!ELEMENT branch (symbol-set)>
+<!ATTLIST branch target-id IDREF #REQUIRED>
+<!ELEMENT symbol-set (symbol-interval*)>
+<!ELEMENT symbol-interval (lower-bound?, higher-bound?)>
+<!ATTLIST symbol-interval
+          empty (true|false) #IMPLIED
+          short (true|false) #IMPLIED>
+<!ELEMENT lower-bound (symbol:ascii)>
+<!ELEMENT higher-bound (symbol:ascii)>
+<!ELEMENT symbol:ascii EMPTY>
+<!ATTLIST symbol:ascii
+          char  CDATA        #IMPLIED
+          ord   NMTOKEN      #REQUIRED
+          first (true|false) #IMPLIED
+          last  (true|false) #IMPLIED>

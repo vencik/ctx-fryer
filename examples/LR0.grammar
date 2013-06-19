@@ -1,0 +1,16 @@
+# Test grammar (LR0)
+
+TerminalSymbols
+    zero  = /0/
+    one   = /0/
+    plus  = /\+/
+    times = /\*/
+TerminalSymbolsEnd
+
+Rules
+    E => E times B
+    E => E plus  B
+    E => B
+    B => zero
+    B => one
+RulesEnd

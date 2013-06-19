@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY dquote "&#34;">
+<!ENTITY quote "&#39;">
+<!ENTITY dots "&#133;">
+]>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:ctx-fryer="ctx-fryer"
+                xmlns:math="math"
+                version="1.0">
+
+<xsl:output method="text" encoding="utf-8" />
+<xsl:strip-space elements="*" />
+
+<!-- Transitions relation nodes generator -->
+<xsl:template name="related-transition-nodes">
+  <xsl:param name="relation" />
+  <xsl:for-each select="$relation/math:set/set-item/math:multiplet/items/list/list-item/math:multiplet">
+    <xsl:variable name="state"      select="items/list/list-item[@index = 0]" />
+    <xsl:variable name="symbol-id"  select="items/list/list-item[@index = 1]" />
+    "<xsl:value-of select="$state" />:<xsl:value-of select="$symbol-id" />" [
+        label = "(<xsl:value-of select="$state" />, <xsl:value-of select="/lr-parser/grammar/*/list/list-item/*[@id = $symbol-id]/@identifier" />)"
+    ];
+
+  </xsl:for-each>
+</xsl:template>
+
+<!-- Transitions relation branches generator -->
+<xsl:template name="related-transition-branches">
+  <xsl:param name="relation" />
+  <xsl:for-each select="$relation/math:set/set-item/math:multiplet">
+    <xsl:variable name="left"            select="items/list/list-item[@index = 0]/math:multiplet" />
+    <xsl:variable name="right"           select="items/list/list-item[@index = 1]/math:multiplet" />
+    <xsl:variable name="left-state"      select="$left/items/list/list-item[@index = 0]" />
+    <xsl:variable name="left-symbol-id"  select="$left/items/list/list-item[@index = 1]" />
+    <xsl:variable name="right-state"     select="$right/items/list/list-item[@index = 0]" />
+    <xsl:variable name="right-symbol-id" select="$right/items/list/list-item[@index = 1]" />
+    "<xsl:value-of select="$left-state" />:<xsl:value-of select="$left-symbol-id" />" ->
+    "<xsl:value-of select="$right-state" />:<xsl:value-of select="$right-symbol-id" />" [
+    ];
+
+  </xsl:for-each>
+</xsl:template>
+
+<xsl:template match="/lr-parser">// LR parser transitions includes relation
+strict digraph "includes" {
+    layout  = dot;
+    rankdir = LR;
+
+    node [
+        shape = ellipse
+        style = solid
+    ];
+
+    edge [
+        arrowhead = open
+    ];
+
+    // Transitions (only those related by includes)
+<xsl:call-template name="related-transition-nodes">
+  <xsl:with-param name="relation" select="includes" />
+</xsl:call-template>
+
+    // includes
+<xsl:call-template name="related-transition-branches">
+  <xsl:with-param name="relation" select="includes" />
+</xsl:call-template>
+}
+</xsl:template>
+
+</xsl:stylesheet>

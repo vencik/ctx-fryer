@@ -1,0 +1,77 @@
+Meta
+    label  = A simple subset of C language grammar
+    author = Vaclav Krpec
+
+    Description
+        The grammar below is an example of a bit more complex definition.
+        It was used mainly for debugging the generator code and project
+        documentation compilation process.
+    DescriptionEnd
+MetaEnd
+
+TerminalSymbols
+    # Lexical constants
+    integer = /[-+]?\d+/
+    float   = /[-+]?\d*\.\d*([eE][-+]?\d+)?/
+
+    # Identifier
+    identifier = /[A-Za-z_]\w*/
+
+    # Arithmetic operators
+    add_op = /\+/
+    sub_op = /-/
+    mul_op = /\*/
+    div_op = /\//
+    mod_op = /%/
+
+    # Assignment operator
+    assign_op = /=/
+
+    # Comparison operators
+    eq_op = /==/
+    ne_op = /!=/
+
+    # Special characters
+    semicolon   = /;/
+    left_parth  = /\(/
+    right_parth = /\)/
+    left_curly  = /\{/
+    right_curly = /\}/
+
+    # Ignored
+    comment    = /\/\*.*\*\//p
+    whitespace = /[ \n\r\t]+/
+TerminalSymbolsEnd
+
+Rules
+    Code => Code Ignored CodeItem Ignored
+    Code =>
+
+    Ignored => comment
+    Ignored => whitespace
+    Ignored =>
+
+    CodeItem => Statement
+
+    Statement => Expression Ignored semicolon
+    Statement => left_curly Code right_curly
+
+    Expression => Expression Ignored AddOp Ignored Factor
+    Expression => left_parth Ignored Expression Ignored right_parth
+    Expression => Factor
+    Expression =>
+
+    Factor => Factor Ignored MulOp Ignored Term
+    Factor => Term
+
+    Term => integer
+    Term => float
+    Term => identifier
+
+    AddOp => add_op
+    AddOp => sub_op
+
+    MulOp => mul_op
+    MulOp => div_op
+    MulOp => mod_op
+RulesEnd

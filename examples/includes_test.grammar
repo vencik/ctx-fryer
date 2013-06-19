@@ -1,0 +1,13 @@
+TerminalSymbols
+    i = /i/
+    j = /j/
+TerminalSymbolsEnd
+
+Rules
+    S => B
+    B => X i j A E
+    B => X
+    A => i
+    E =>
+    X => j
+RulesEnd

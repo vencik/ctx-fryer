@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY dquote "&#34;">
+<!ENTITY quote "&#39;">
+<!ENTITY dots "&#133;">
+]>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:ctx-fryer="http://127.0.0.1/project"
+                version="1.0">
+
+<xsl:output method="text" encoding="utf-8" />
+<xsl:strip-space elements="*" />
+
+<xsl:template match="/lr-parser">// LR parser
+strict digraph "LR parser" {
+    layout = dot;
+
+    node [
+        shape = oval
+        style = solid
+    ];
+
+    edge [
+        arrowhead = open
+    ];
+
+<xsl:for-each select="item-sets/list/list-item">    "<xsl:value-of select="@index" />" [
+        // LR parser state <xsl:value-of select="@index" />
+        label = "<xsl:value-of select="@index" />"
+    ];
+
+</xsl:for-each>
+
+<xsl:for-each select="transition-table/table/table-entry">    "<xsl:value-of select="@key0" />" -> "<xsl:value-of select="." />" [
+  <xsl:variable name="key1" select="@key1" />
+  <xsl:variable name="symbol-ident" select="/lr-parser/grammar/*/list/list-item/*[@id = $key1]/@identifier" />
+        label = "<xsl:value-of select="$symbol-ident" />"
+    ];
+
+</xsl:for-each>
+}
+</xsl:template>
+
+</xsl:stylesheet>

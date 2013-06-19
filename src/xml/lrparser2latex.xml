@@ -1,0 +1,999 @@
+<?xml version="1.0"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY dquote "&#34;">
+<!ENTITY quote  "&#39;">
+<!ENTITY dots   "&#133;">
+<!ENTITY dollar "&#36;">
+]>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:ctx-fryer="ctx-fryer"
+                xmlns:math="math"
+                version="1.0">
+
+<xsl:output method="text" encoding="utf-8" />
+<xsl:strip-space elements="*" />
+
+<!-- Quote LaTeX special characters -->
+<xsl:template name="quote-char">
+  <xsl:param name="string" data-type="string" />
+  <xsl:param name="char" data-type="string" />
+  <xsl:choose>
+    <xsl:when test="contains($string, $char)">
+      <xsl:value-of select="substring-before($string, $char)" />
+      <xsl:choose>
+        <xsl:when test="$char = '\'">\backslash </xsl:when>
+        <xsl:otherwise>\<xsl:value-of select="$char" /> </xsl:otherwise>
+      </xsl:choose>
+      <xsl:call-template name="quote-char">
+        <xsl:with-param name="string" select="substring-after($string, $char)" />
+        <xsl:with-param name="char" select="$char" />
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$string" />
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template name="quote-string">
+  <xsl:param name="string" data-type="string" />
+  <xsl:variable name="quoted0">
+    <xsl:call-template name="quote-char">
+      <xsl:with-param name="string" select="$string" />
+      <xsl:with-param name="char" select="'\'" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="quoted1">
+    <xsl:call-template name="quote-char">
+      <xsl:with-param name="string" select="$quoted0" />
+      <xsl:with-param name="char" select="'_'" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="quoted2">
+    <xsl:call-template name="quote-char">
+      <xsl:with-param name="string" select="$quoted1" />
+      <xsl:with-param name="char" select="'$'" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="quoted3">
+    <xsl:call-template name="quote-char">
+      <xsl:with-param name="string" select="$quoted2" />
+      <xsl:with-param name="char" select="'%'" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="quoted4">
+    <xsl:call-template name="quote-char">
+      <xsl:with-param name="string" select="$quoted3" />
+      <xsl:with-param name="char" select="'&amp;'" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="quoted5">
+    <xsl:call-template name="quote-char">
+      <xsl:with-param name="string" select="$quoted4" />
+      <xsl:with-param name="char" select="'{'" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="quoted6">
+    <xsl:call-template name="quote-char">
+      <xsl:with-param name="string" select="$quoted5" />
+      <xsl:with-param name="char" select="'}'" />
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:value-of select="$quoted2" />
+</xsl:template>
+
+<!-- Insert figure containing graphics from external file -->
+<xsl:template name="figure">
+  <xsl:param name="file"    data-type="string" />
+  <xsl:param name="format"  data-type="string" />
+  <xsl:param name="caption" data-type="string" />
+  <xsl:param name="label"   data-type="string" />
+\begin{figure}[!ht]
+\centering
+%\includegraphicsFit[
+<!--xsl:choose>
+  <xsl:when test="string-length($format) > 0"><xsl:value-of select="$format" /></xsl:when>
+  <xsl:otherwise>width=\textwidth, height=0.98\textheight, keepaspectratio</xsl:otherwise>
+</xsl:choose-->
+%]{<xsl:value-of select="$file" />}
+\includegraphicsFit{<xsl:value-of select="$file" />}
+\caption{<xsl:value-of select="$caption" />}
+\label{<xsl:value-of select="$label" />}
+\end{figure}
+</xsl:template>
+
+
+<!-- Root non-terminal ID -->
+<xsl:variable name="root-non-terminal-id" select="/lr-parser/grammar/@root-non-terminal-id" />
+
+<!-- EOF terminal ID -->
+<xsl:variable name="eof-terminal-id" select="/lr-parser/action-table/@eof-id" />
+
+<!-- Non-terminal quoted identifier getter (by symbol ID) -->
+<xsl:template name="non-terminal-identifier">
+  <xsl:param name="id" />
+  <xsl:call-template name="quote-string">
+    <xsl:with-param name="string"
+                    select="/lr-parser/grammar/non-terminals/list/list-item/non-terminal-symbol[@id = $id]/@identifier" />
+  </xsl:call-template>
+</xsl:template>
+
+<!-- Terminal quoted identifier getter (by symbol ID) -->
+<xsl:template name="terminal-identifier">
+  <xsl:param name="id" />
+  <xsl:choose>
+    <xsl:when test="$id = $eof-terminal-id">EOF</xsl:when>
+    <xsl:otherwise>
+      <xsl:call-template name="quote-string">
+        <xsl:with-param name="string"
+                        select="/lr-parser/grammar/terminals/list/list-item/terminal-symbol[@id = $id]/@identifier" />
+      </xsl:call-template>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<!-- Transition -> terminals function table generator -->
+<xsl:template name="transition-to-terminals-table">
+  <xsl:param name="name"    data-type="string" />
+  <xsl:param name="caption" data-type="string" />
+  <xsl:param name="label"   data-type="string" />
+  <xsl:param name="root" />
+
+  <xsl:variable name="valid-state-items" select="$root/math:set/set-item[math:multiplet/items/list/list-item[@index = 1]/math:set/@cardinality > 0 and not(math:multiplet/items/list/list-item[@index = 0]/math:multiplet/items/list/list-item[@index = 0] = preceding-sibling::set-item[math:multiplet/items/list/list-item[@index = 1]/math:set/@cardinality > 0]/math:multiplet/items/list/list-item[@index = 0]/math:multiplet/items/list/list-item[@index = 0])]" />
+  <xsl:variable name="states" select="$valid-state-items/math:multiplet/items/list/list-item[@index = 0]/math:multiplet/items/list/list-item[@index = 0]" data-type="number" />
+  <xsl:variable name="valid-non-terminal-id-items" select="$root/math:set/set-item[math:multiplet/items/list/list-item[@index = 1]/math:set/@cardinality > 0 and not(math:multiplet/items/list/list-item[@index = 0]/math:multiplet/items/list/list-item[@index = 1] = preceding-sibling::set-item[math:multiplet/items/list/list-item[@index = 1]/math:set/@cardinality > 0]/math:multiplet/items/list/list-item[@index = 0]/math:multiplet/items/list/list-item[@index = 1])]" />
+  <xsl:variable name="non-terminal-ids" select="$valid-non-terminal-id-items/math:multiplet/items/list/list-item[@index = 0]/math:multiplet/items/list/list-item[@index = 1]" />
+  <xsl:variable name="non-terminals" select="/lr-parser/grammar/non-terminals/list/list-item/non-terminal-symbol[@id = $non-terminal-ids]" />
+
+\begin{table}[!ht]
+\caption{<xsl:value-of select="$caption" />}
+\label{<xsl:value-of   select="$label" />}
+\centering
+\sbox{0}{
+\begin{tabular}{|r||<xsl:for-each select="$non-terminals">c|</xsl:for-each>}
+\hline &amp; \multicolumn{<xsl:value-of select="count($non-terminals)" />}{|c|}{<xsl:value-of select="$name" />} \\ \hline
+state
+  <xsl:for-each select="$non-terminals">
+    <xsl:sort select="@id" />
+    &amp;
+    <xsl:call-template name="quote-string">
+       <xsl:with-param name="string" select="@identifier" />
+    </xsl:call-template>
+  </xsl:for-each>
+\\ \hline \hline
+
+  <xsl:for-each select="$states">
+    <xsl:sort select="." data-type="number" />
+    <xsl:variable name="state" select="." />
+    <xsl:value-of select="$state" />
+    <xsl:for-each select="$non-terminals">
+      <xsl:sort select="@id" />
+      <xsl:variable name="non-terminal-id" select="@id" />
+      <xsl:variable name="cut" select="$root/math:set/set-item/math:multiplet[items/list/list-item[@index = 0]/math:multiplet/items/list/list-item[@index = 0] = $state and items/list/list-item[@index = 0]/math:multiplet/items/list/list-item[@index = 1] = $non-terminal-id]" />
+&amp;
+\begin{minipage}[t]{0.2\columnwidth}
+<!--xsl:value-of select="$state" />:<xsl:value-of select="$non-terminal-id" />\\-->
+      <xsl:choose>
+        <xsl:when test="count($cut) = 0">
+          <!-- not defined -->
+          %$\emptyset$
+        </xsl:when>
+        <xsl:when test="count($cut) = 1">
+          <xsl:for-each select="$cut/items/list/list-item[@index = 1]/math:set/set-item">
+            <xsl:sort select="." />
+            <xsl:call-template name="terminal-identifier">
+              <xsl:with-param name="id" select="." />
+            </xsl:call-template>
+            <xsl:if test="not(position() = last())">, </xsl:if>
+          </xsl:for-each>
+        </xsl:when>
+        <xsl:otherwise>
+\textcolor{red}{INTERNAL ERROR:
+$ |<xsl:value-of select="$name" />(<xsl:value-of select="$state-number" />, <xsl:value-of select="$non-terminal-id" />)| =
+<xsl:value-of select="count($cut)" /> $}
+        </xsl:otherwise>
+      </xsl:choose>
+\end{minipage}
+
+    </xsl:for-each>
+\\ \hline
+  </xsl:for-each>
+\end{tabular}
+}
+\ifdim\wd0 > \textwidth
+    \sbox1{\resizebox{\textwidth}{!}{\usebox0}}
+    \ifdim\ht1 > \textheight
+        \resizebox{!}{0.98\textheight}{\usebox1}
+    \else
+        \leavevmode\usebox1
+    \fi
+\else
+    \leavevmode\usebox0
+\fi
+\end{table}
+</xsl:template>
+
+
+<!-- LA table generator -->
+<xsl:template name="look-ahead-table">
+\begin{table}[!ht]
+\caption{Look-ahead terminal symbols}
+\label{look_ahead_table}
+\centering
+\sbox{0}{
+\begin{tabular}{|l|c|}
+\hline
+(state, rule) &amp; LA \\
+\hline \hline
+  <xsl:for-each select="/lr-parser/look-ahead-table/table/table-entry">
+    <xsl:sort select="@key0" data-type="number" />
+    <xsl:sort select="@key1" data-type="number" />
+    <xsl:variable name="state"       select="@key0" />
+    <xsl:variable name="rule-number" select="@key1" />
+    <xsl:variable name="rule"        select="/lr-parser/grammar/rules/list/list-item/rule[@number = $rule-number]" />
+    (<xsl:value-of select="$state" />,
+    <xsl:call-template name="quote-string">
+      <xsl:with-param name="string" select="$rule/left-side" />
+    </xsl:call-template>
+    $\buildrel <xsl:value-of select="$rule-number" />\over\longrightarrow$
+    <xsl:choose>
+      <xsl:when test="$rule/right-side/list/@size &gt;= 1">
+        <xsl:for-each select="$rule/right-side/list/list-item">
+          <xsl:call-template name="quote-string">
+            <xsl:with-param name="string" select="." />
+          </xsl:call-template>
+          <xsl:if test="not(position() = last())"> $ $ </xsl:if>
+        </xsl:for-each>
+      </xsl:when>
+      <xsl:otherwise>
+        $\epsilon$
+      </xsl:otherwise>
+    </xsl:choose>)
+&amp;
+\begin{minipage}[t]{0.8\columnwidth}
+    <xsl:for-each select="math:set/set-item">
+      <xsl:sort select="." />
+      <xsl:call-template name="terminal-identifier">
+        <xsl:with-param name="id" select="." />
+      </xsl:call-template>
+      <xsl:if test="not(position() = last())">, </xsl:if>
+    </xsl:for-each>
+\end{minipage}
+    \\ \hline
+  </xsl:for-each>
+\end{tabular}
+}
+\ifdim\wd0 > \textwidth
+    \sbox1{\resizebox{\textwidth}{!}{\usebox0}}
+    \ifdim\ht1 > \textheight
+        \resizebox{!}{0.98\textheight}{\usebox1}
+    \else
+        \leavevmode\usebox1
+    \fi
+\else
+    \leavevmode\usebox0
+\fi
+\end{table}
+</xsl:template>
+
+
+<!--
+LR parser documentation is generated, below.
+
+In the 1st section, the (augmented, if necessary) grammar the parser uses
+is presented.
+
+The 2nd section contains the grammar (LR(0)) item sets.
+
+The 3rd section provides the parser action and goto tables
+and list(s) of action-reduce and/ or reduce-reduce conflicts (if any).
+-->
+<xsl:template match="lr-parser">% LR-parser
+
+\documentclass[11pt,a4paper,oneside]{article}
+\usepackage[lmargin=1.2cm, rmargin=1.2cm, tmargin=2cm, bmargin=2cm]{geometry}
+\usepackage{ulem}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{verbatim}
+
+% Colors
+\definecolor{lightgray}{rgb}{0.65,0.65,0.65}
+
+% Graphics inclusion with width scaling on necessity
+\newcommand{\includegraphicsFitWidth}[2][]{
+    \sbox{0}{\includegraphics[#1]{#2}}
+    \ifdim\wd0 > \textwidth
+        \resizebox{\textwidth}{!}{\usebox0}
+    \else
+        \leavevmode\usebox0
+    \fi
+}
+
+% Graphics inclusion with scaling on necessity
+\newcommand{\includegraphicsFit}[2][]{
+    \sbox{0}{\includegraphicsFitWidth[#1]{#2}}
+    \ifdim\ht0 > 0.98\textheight
+        \resizebox{!}{0.98\textheight}{\usebox0}
+    \else
+        \leavevmode\usebox0
+    \fi
+}
+
+
+\begin{document}
+
+\begin{titlepage}
+\title{<xsl:choose>
+  <xsl:when test="@label">
+    <xsl:call-template name="quote-string">
+      <xsl:with-param name="string" select="@label" />
+    </xsl:call-template>
+  </xsl:when>
+  <xsl:otherwise>\textcolor{yellow}{Title not defined}</xsl:otherwise>
+</xsl:choose>}
+\author{<xsl:choose>
+  <xsl:when test="@author">
+    <xsl:call-template name="quote-string">
+      <xsl:with-param name="string" select="@author" />
+    </xsl:call-template>
+  </xsl:when>
+  <xsl:otherwise>\textcolor{yellow}{Author not defined}</xsl:otherwise>
+</xsl:choose>}
+\date{\today}
+\maketitle
+\end{titlepage}
+\clearpage
+
+
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+
+
+\begin{section}{Grammar}
+
+The project definition file specifies grammar of a language for which
+parser is constructed.
+The definition file is shown in Appendix \ref{project_def_file}.
+
+<xsl:if test="description">
+\begin{subsection}{Description}
+<xsl:value-of select="description" />
+\end{subsection}
+</xsl:if>
+
+\begin{subsection}{Syntax}
+
+The parser accepts words generated by the following grammar.
+
+Root non-terminal symbol
+<xsl:call-template name="quote-string">
+  <xsl:with-param name="string"
+    select="grammar/non-terminals/list/list-item/non-terminal-symbol[@id = $root-non-terminal-id]/@identifier" />
+</xsl:call-template>
+was added (together with rule number~0) to form augmented grammar.
+Symbol $\epsilon$ (epsilon) is used on right-hand side of rules
+that (directly) nullate its left-hand side non-terminal symbol
+as usual.
+Terminal symbols are underlined for better orientation.
+
+\begin{paragraph}{}
+\begin{tabular}{r r c l}
+<xsl:for-each select="grammar/rules/list/list-item/rule">
+  <xsl:variable name="left-side" select="left-side" />
+  (<xsl:value-of select="@number" />) &amp;
+  <xsl:call-template name="quote-string">
+    <xsl:with-param name="string" select="$left-side" />
+  </xsl:call-template>
+  &amp;
+  $\to$ &amp;
+  <xsl:choose>
+    <xsl:when test="right-side/list/list-item">
+      <xsl:for-each select="right-side/list/list-item">
+        <xsl:variable name="symbol-identifier" select="." />
+        <xsl:variable name="is-terminal"
+                      select="count(/lr-parser/grammar/terminals/list/list-item/terminal-symbol[@identifier = $symbol-identifier]) > 0" />
+        <xsl:if test="$is-terminal">\underline{</xsl:if>
+        <xsl:call-template name="quote-string">
+          <xsl:with-param name="string" select="$symbol-identifier" />
+        </xsl:call-template>
+        <xsl:if test="$is-terminal">}</xsl:if>
+        <xsl:if test="not(position() = last())"> $ $ </xsl:if>
+      </xsl:for-each>
+    </xsl:when>
+    <xsl:otherwise>
+      $\epsilon$
+    </xsl:otherwise>
+  </xsl:choose>
+  \\
+</xsl:for-each>
+\end{tabular}
+\end{paragraph}
+
+\end{subsection}
+
+\begin{subsection}{Lexical units}
+
+The grammar terminal symbols (atomic lexical units) are words
+induced by following regular expressions (space characters are visual):
+
+\begin{tabular}{l l}
+<xsl:for-each select="grammar/terminals/list/list-item/terminal-symbol">
+  <xsl:call-template name="quote-string">
+    <xsl:with-param name="string" select="@identifier" />
+  </xsl:call-template>
+  &amp;
+  \verb*§<xsl:value-of select="@regex" />§
+  \\
+</xsl:for-each>
+\end{tabular}
+
+\end{subsection}
+
+\end{section}
+\clearpage
+
+
+\begin{section}{Lexical analyser}
+
+The grammar terminal symbols regular expressions were transformed
+to final state automata (FSA) and their union was created.
+The resulting automaton therefore accepts union of the terminal
+symbols regular languages while retaining the ability of classification
+of each accepted word.
+The automaton is shown on Figure \ref{terminals_fsa}.
+
+<xsl:call-template name="figure">
+  <xsl:with-param name="file"    select="'terminal_symbols_fsa.eps'" />
+  <xsl:with-param name="caption" select="'Terminal symbols union FSA'" />
+  <xsl:with-param name="label"   select="'terminals_fsa'" />
+</xsl:call-template>
+
+The terminal symbols union finite state automaton is base for creation
+of efficient lexical analyser of the grammar terminal symbols
+(providing input of the grammar-induced language parser).
+
+\end{section}
+\clearpage
+
+
+\begin{section}{Item sets}
+
+The grammar above yields the following LR(0) item sets.
+Items marked with $+$ are produced by closure of the non-marked kernels.
+The $\bullet$ symbol marks item position (it stands before the symbol
+that is going to be parsed).
+For final items, the $\bullet$ symbol alters to $\circ$.
+
+The grammar item sets space is isomorphic to the parser states space
+(i.e. parser states map 1:1 to the grammar item sets).
+Their enumerations match.
+
+<xsl:for-each select="item-sets/list/list-item">
+<xsl:variable name="kernel" select="item-set/kernel" />
+\paragraph{Item set <xsl:value-of select="@index" /> \\}
+\begin{tabular}{c r c l}
+<xsl:for-each select="item-set/items/list/list-item">
+  <xsl:variable name="index" select="@index" />
+  <xsl:variable name="rule-number" select="item/@rule-number" />
+  <xsl:variable name="position" select="item/@position" />
+  <xsl:variable name="symbol-id" select="item/@symbol-id" />
+  <xsl:variable name="rule" select="/lr-parser/grammar/rules/list/list-item/rule[@number = $rule-number]" />
+  <xsl:if test="not($kernel/list/list-item = $index)"> $+$ </xsl:if> &amp;
+  <xsl:call-template name="quote-string">
+    <xsl:with-param name="string" select="$rule/left-side" />
+  </xsl:call-template>
+  &amp; $\to$ &amp;
+  <xsl:for-each select="$rule/right-side/list/list-item">
+    <xsl:variable name="symbol-identifier" select="." />
+    <xsl:variable name="is-terminal"
+                  select="count(/lr-parser/grammar/terminals/list/list-item/terminal-symbol[@identifier = $symbol-identifier]) > 0" />
+    <xsl:if test="@index = $position"> $\bullet$ </xsl:if>
+    <xsl:if test="$is-terminal">\underline{</xsl:if>
+    <xsl:call-template name="quote-string">
+      <xsl:with-param name="string" select="$symbol-identifier" />
+    </xsl:call-template>
+    <xsl:if test="$is-terminal">}</xsl:if>
+    <xsl:if test="not(position() = last())"> $ $ </xsl:if>
+  </xsl:for-each>
+  <xsl:if test="$rule/right-side/list/@size = $position"> $ $ $\circ$ </xsl:if>
+  \\
+</xsl:for-each>
+\end{tabular}
+</xsl:for-each>
+
+\end{section}
+\clearpage
+
+
+\begin{section}{Parser}
+
+The grammar-induced language syntax analyser (aka parser) definition is presented, below.
+
+The parser is<xsl:if test="@is-LR0 = 'false'">n't</xsl:if> an LR(0) parser.
+<xsl:if test="@is-LR0 = 'false'">See collision list(s) below the action and goto tables.
+Actions that are striked out were removed by performing LALR(1) analysis of the parser.
+
+The parser is<xsl:if test="@is-LALR1 = 'false'">n't</xsl:if> an LALR(1) parser.
+<xsl:if test="@is-LALR1 = 'true'">That means that after the analysis, no conflict remained.
+</xsl:if>
+</xsl:if>
+
+
+\begin{subsection}{Action and goto tables}
+
+The action table (see Table \ref{parser_action_table}) defines actions performed
+in a parser state depending on what is the next lexical item in the input stream.
+
+Shift action s\it X\ \rm means that the terminal symbol shall be read and
+the next parser state shall be \it X\rm.
+
+Reduce action r\it X\ \rm means that reduction by rule \it X\ \rm shall be done
+and the next parser state shall be determined by the goto table based on resulting
+stack state and the rule left non-terminal.
+
+Accept action acc means that the input syntax is correct.
+Note that the accept action only appears in the last EOF column (the parser
+may only accept if the whole input is read).
+Also note that there are no shift actions in the EOF column (as there's
+nothing left to read).
+
+Cell with no (valid) action means that the parser rejects the input
+(aka parse error or syntax error).
+<xsl:if test="@is-LR0 = 'false'">
+Actions produced by LR(0) parser generator and later invalidated
+by LALR(1) transformation are still shown (but striked out).
+</xsl:if>
+
+The goto table (see Table \ref{parser_goto_table}) defines new parser state after
+a reduce action was done.
+Note that there isn't any column for the grammar root non-terminal in the goto table;
+that's because actions that would be the root non-terminal reductions are either
+acceptations (if the whole input was read) or rejections (if the input is non-empty,
+aka trailing characters after correct input prefix).
+Also, rows for states and/or columns for non-terminals for which there are
+no entries in the table are omitted to save space.
+
+<!-- Action table-->
+\begin{table}[!ht]
+\caption{Parser action table}
+\label{parser_action_table}
+\centering
+\sbox{0}{
+\begin{tabular}{|r||
+<xsl:for-each select="grammar/terminals/list/list-item">c|</xsl:for-each>c|}
+\hline
+&amp;
+\multicolumn{<xsl:value-of select="grammar/terminals/list/@size + 1" />}{|c|}{action} \\
+\hline
+state
+<xsl:for-each select="grammar/terminals/list/list-item">
+  <xsl:sort select="terminal-symbol/@id" />
+  &amp;
+  <xsl:call-template name="quote-string">
+    <xsl:with-param name="string" select="terminal-symbol/@identifier" />
+  </xsl:call-template>
+</xsl:for-each>
+&amp; EOF
+\\ \hline \hline
+
+<xsl:for-each select="action-table/table/table-entry[not(./@key0 = preceding-sibling::table-entry/@key0)]">
+  <xsl:sort select="@key0" data-type="number" />
+  <xsl:variable name="state-number" select="@key0" />
+  <xsl:value-of select="$state-number" />
+  <xsl:for-each select="/lr-parser/grammar/terminals/list/list-item">
+    <xsl:sort select="terminal-symbol/@id" />
+    <xsl:variable name="terminal-id" select="terminal-symbol/@id" />
+    &amp;
+    <xsl:for-each select="/lr-parser/action-table/table/table-entry[./@key0 = $state-number and ./@key1 = $terminal-id]">
+      <xsl:for-each select="./list/list-item">
+        <xsl:if test="./*/@is-valid = 'false'">
+\textcolor{lightgray}{
+\sout{
+        </xsl:if>
+        <xsl:choose>
+          <xsl:when test=". = shift">s<xsl:value-of select="./shift/@state-id" /></xsl:when>
+          <xsl:when test=". = reduce">r<xsl:value-of select="./reduce/@rule-number" /></xsl:when>
+          <xsl:otherwise>\textcolor{red}{INTERNAL ERROR: UNEXPECTED ACTION}</xsl:otherwise>
+        </xsl:choose>
+        <xsl:if test="./*/@is-valid = 'false'">
+}}
+        </xsl:if>
+      </xsl:for-each>
+    </xsl:for-each>
+  </xsl:for-each>
+  &amp;
+  <xsl:for-each select="/lr-parser/action-table/table/table-entry[./@key0 = $state-number and ./@key1 = $eof-terminal-id]">
+    <xsl:for-each select="./list/list-item">
+        <xsl:if test="./*/@is-valid = 'false'">
+\textcolor{lightgray}{
+\sout{
+        </xsl:if>
+        <xsl:choose>
+          <xsl:when test=". = reduce">r<xsl:value-of select="./reduce/@rule-number" /></xsl:when>
+          <xsl:when test=". = accept">acc</xsl:when>
+          <xsl:otherwise>\textcolor{red}{INTERNAL ERROR: UNEXPECTED ACTION}</xsl:otherwise>
+        </xsl:choose>
+        <xsl:if test="./*/@is-valid = 'false'">
+}}
+        </xsl:if>
+    </xsl:for-each>
+  </xsl:for-each>
+  \\ \hline
+</xsl:for-each>
+\end{tabular}
+}
+\ifdim\wd0 > \textwidth
+    \sbox1{\resizebox{\textwidth}{!}{\usebox0}}
+    \ifdim\ht1 > \textheight
+        \resizebox{!}{0.98\textheight}{\usebox1}
+    \else
+        \leavevmode\usebox1
+    \fi
+\else
+    \leavevmode\usebox0
+\fi
+\end{table}
+
+<!-- Goto table-->
+\begin{table}[!ht]
+\caption{Parser goto table}
+\label{parser_goto_table}
+\centering
+\sbox{0}{
+\begin{tabular}{|r||
+<xsl:for-each select="grammar/non-terminals/list/list-item[not(non-terminal-symbol/@id = $root-non-terminal-id)]">c|</xsl:for-each>}
+\hline
+&amp;
+\multicolumn{<xsl:value-of select="grammar/non-terminals/list/@size - 1" />}{c|}{goto} \\
+\hline
+state
+<xsl:for-each select="grammar/non-terminals/list/list-item[not (non-terminal-symbol/@id = $root-non-terminal-id)]">
+  <xsl:sort select="non-terminal-symbol/@id" />
+  &amp;
+  <xsl:call-template name="quote-string">
+    <xsl:with-param name="string" select="non-terminal-symbol/@identifier" />
+  </xsl:call-template>
+</xsl:for-each>
+\\ \hline \hline
+<xsl:for-each select="goto-table/table/table-entry[not(./@key0 = preceding-sibling::table-entry/@key0)]">
+  <xsl:sort select="@key0" data-type="number" />
+  <xsl:variable name="state-number" select="@key0" />
+  <xsl:value-of select="$state-number" />
+  <xsl:for-each select="/lr-parser/grammar/non-terminals/list/list-item[not (non-terminal-symbol/@id = $root-non-terminal-id)]">
+    <xsl:sort select="non-terminal-symbol/@id" />
+    <xsl:variable name="non-terminal-id" select="non-terminal-symbol/@id" />
+    &amp;
+    <xsl:for-each select="/lr-parser/goto-table/table/table-entry[./@key0 = $state-number and ./@key1 = $non-terminal-id]">
+      <xsl:value-of select="." />
+    </xsl:for-each>
+  </xsl:for-each>
+  \\ \hline
+</xsl:for-each>
+\end{tabular}
+}
+\ifdim\wd0 > \textwidth
+    \sbox1{\resizebox{\textwidth}{!}{\usebox0}}
+    \ifdim\ht1 > \textheight
+        \resizebox{!}{0.98\textheight}{\usebox1}
+    \else
+        \leavevmode\usebox1
+    \fi
+\else
+    \leavevmode\usebox0
+\fi
+\end{table}
+
+\end{subsection}
+
+
+<xsl:if test="@is-LR0 = 'false'">
+<xsl:if test="shift-reduce-conflicts and not(shift-reduce-conflicts/list/@size = 0)">
+\begin{subsection}{Shift-reduce LR(0) conflicts}
+
+There are <xsl:value-of select="shift-reduce-conflicts/list/@size" /> shift-reduce LR(0) conflicts in the action table above:
+\begin{enumerate}
+<xsl:for-each select="shift-reduce-conflicts/list/list-item">
+  <xsl:variable name="state-number" select="list/list-item[@index = 0]" />
+  <xsl:variable name="terminal-id" select="list/list-item[@index = 1]" />
+  <xsl:variable name="terminal" select="/lr-parser/grammar/terminals/list/list-item/terminal-symbol[@id = $terminal-id]" />
+  \item
+  state: <xsl:value-of select="$state-number" />,
+  terminal symbol:
+  <xsl:call-template name="quote-string">
+    <xsl:with-param name="string" select="$terminal/@identifier" />
+  </xsl:call-template>, <xsl:choose>
+    <xsl:when test="count(/lr-parser/action-table/table/table-entry[@key0 = $state-number and @key1 = $terminal-id]/list/list-item/*[@is-valid = 'true']) &lt; 2">resolved
+    </xsl:when>
+    <xsl:otherwise>\bf PENDING \rm
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:for-each>
+\end{enumerate}
+
+\end{subsection}
+</xsl:if>
+
+<xsl:if test="reduce-reduce-conflicts and not(reduce-reduce-conflicts/list/@size = 0)">
+\begin{subsection}{Reduce-reduce LR(0) conflicts}
+
+There are <xsl:value-of select="reduce-reduce-conflicts/list/@size" /> reduce-reduce LR(0) conflicts in the action table above:
+\begin{enumerate}
+<xsl:for-each select="reduce-reduce-conflicts/list/list-item">
+  <xsl:variable name="state-number" select="list/list-item[@index = 0]" />
+  <xsl:variable name="terminal-id" select="list/list-item[@index = 1]" />
+  <xsl:variable name="terminal" select="/lr-parser/grammar/terminals/list/list-item/terminal-symbol[@id = $terminal-id]" />
+  \item
+  state: <xsl:value-of select="$state-number" />,
+  terminal symbol:
+  <xsl:choose>
+    <xsl:when test="$terminal-id = /lr-parser/action-table/@eof-id">EOF</xsl:when>
+    <xsl:otherwise>
+      <xsl:call-template name="quote-string">
+        <xsl:with-param name="string" select="$terminal/@identifier" />
+      </xsl:call-template>
+    </xsl:otherwise>
+  </xsl:choose>, <xsl:choose>
+    <xsl:when test="count(/lr-parser/action-table/table/table-entry[@key0 = $state-number and @key1 = $terminal-id]/list/list-item/*[@is-valid = 'true']) &lt; 2">resolved
+    </xsl:when>
+    <xsl:otherwise>\bf PENDING \rm
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:for-each>
+\end{enumerate}
+
+\end{subsection}
+</xsl:if>
+
+\begin{subsection}{Nullable non-terminals}
+
+<xsl:variable name="nullable-non-terminals"
+              select="grammar/non-terminals/list/list-item/non-terminal-symbol[@is-nullable = 'true']" />
+<xsl:choose>
+  <xsl:when test="count($nullable-non-terminals) = 0">
+    The grammar doesn't have any nullable non-terminal symbols.
+  </xsl:when>
+  <xsl:when test="count($nullable-non-terminals) = 1">
+    Only non-terminal symbol
+    <xsl:call-template name="quote-string">
+      <xsl:with-param name="string" select="$nullable-non-terminals/@identifier" />
+    </xsl:call-template>
+    of the grammar is nullable.
+  </xsl:when>
+  <xsl:otherwise>
+    The following non-terminal symbols of the grammar are nullable:
+    <xsl:for-each select="$nullable-non-terminals">
+      <xsl:sort select="@id" />
+      <xsl:call-template name="quote-string">
+        <xsl:with-param name="string" select="@identifier" />
+      </xsl:call-template>
+      <xsl:choose>
+        <xsl:when test="position() = count($nullable-non-terminals) - 1"> and </xsl:when>
+        <xsl:when test="not(position() = last())">, </xsl:when>
+      </xsl:choose>
+    </xsl:for-each>.
+  </xsl:otherwise>
+</xsl:choose>
+\end{subsection}
+
+\begin{subsection}{Transition graph}
+
+The transition graph contains both terminal and non-terminal transitions.
+It was used to create the LR(0) parser action and goto tables, respectively.
+The transition graph is shown on Figure \ref{transition_graph}.
+
+<xsl:call-template name="figure">
+  <xsl:with-param name="file"    select="'lr_parser.transition_graph.eps'" />
+  <xsl:with-param name="caption" select="'Transition graph'" />
+  <xsl:with-param name="label"   select="'transition_graph'" />
+</xsl:call-template>
+
+\end{subsection}
+
+\begin{subsection}{$DR$ function}
+
+The $DR$ (direct read) function projects each non-terminal transition
+to terminal symbols that can be (directly) read from the transition target, i.e.
+
+\begin{center}
+\begin{math}
+DR(p, A) = \{t \in T \;|\; p \buildrel A\over\longrightarrow r \buildrel t\over\longrightarrow\}
+\end{math}
+\end{center}
+
+The $DR$ function is shown by table \ref{DR_function}.
+Note that to save space, only those states and non-terminal symbols
+that form a transition for which $DR$ is non-empty are included in the table.
+
+<xsl:call-template name="transition-to-terminals-table">
+  <xsl:with-param name="name"    select="'&dollar;DR&dollar;'" />
+  <xsl:with-param name="caption" select="'&dollar;DR&dollar; function'" />
+  <xsl:with-param name="label"   select="'DR_function'" />
+  <xsl:with-param name="root"    select="/lr-parser/DR" />
+</xsl:call-template>
+\end{subsection}
+
+\begin{subsection}{$reads$ relation}
+
+The $reads$ relation is used to propagate $DR$ function via
+transitions with nullable non-terminals.
+The $reads$ relation is shown on Figure \ref{reads_relation}.
+
+\begin{center}
+\begin{math}
+(p, A) \: reads \: (r, C)
+\iff
+p \buildrel A\over\longrightarrow r \buildrel C\over\longrightarrow
+\; \land \;
+C \Rightarrow^* \epsilon
+\end{math}
+\end{center}
+
+<xsl:call-template name="figure">
+  <xsl:with-param name="file"    select="'lr_parser.reads.eps'" />
+  <xsl:with-param name="caption" select="'&dollar;reads&dollar; relation'" />
+  <xsl:with-param name="label"   select="'reads_relation'" />
+</xsl:call-template>
+
+\end{subsection}
+
+\begin{subsection}{$Read$ function}
+
+The $Read$ function projects each non-terminal transition
+to terminal symbols that can be (transitively) read from the transition target, i.e.
+
+\begin{center}
+\begin{math}
+Read(p, A) =_s DR(p, A) \; \cup \; \bigcup \{Read(r, C) \;|\; (p, A) \: reads \: (r, C)\}
+\end{math}
+\end{center}
+
+The $Read$ function is shown by table \ref{Read_function}.
+Note that to save space, only those states and non-terminal symbols
+that form a transition for which $Read$ is non-empty are included in the table, below.
+
+\begin{paragraph}{}
+<xsl:call-template name="transition-to-terminals-table">
+  <xsl:with-param name="name"    select="'&dollar;Read&dollar;'" />
+  <xsl:with-param name="caption" select="'&dollar;Read&dollar; function'" />
+  <xsl:with-param name="label"   select="'Read_function'" />
+  <xsl:with-param name="root" select="/lr-parser/Read" />
+</xsl:call-template>
+\end{paragraph}
+\end{subsection}
+
+\begin{subsection}{$includes$ relation}
+
+The $includes$ relation describes inclusion of terminal sets that may follow
+a transition.
+In principle, a $Follow$ set of transition $(p, A)$ includes $Follow$ set
+of transition $(p', B)$ iff there is a transition path from $p'$ to $p$ under sentential
+form $\beta$, and from $(p, A)$ target state $r$, there is a transition path to $r'$ under
+nullable sentential form $\gamma$ and $B \to \beta A \gamma$ is a rule.
+This way, after transition from $p'$ to $r'$, reduction by the rule may be done
+and since $\gamma$ is nullable then terminals that may follow $(p', B)$ may also
+follow $(p, A)$.
+The $includes$ relation is shown on Figure \ref{includes_relation}.
+
+\begin{center}
+\begin{math}
+(p, A) \: includes \: (p', B)
+\iff
+B \to \beta A \gamma
+\; \land \;
+\gamma \Rightarrow^* \epsilon
+\; \land \;
+p' \: - \buildrel \beta \over \dots \to \: p
+\end{math}
+\end{center}
+
+<xsl:call-template name="figure">
+  <xsl:with-param name="file"    select="'lr_parser.includes.eps'" />
+  <xsl:with-param name="caption" select="'&dollar;includes&dollar; relation'" />
+  <xsl:with-param name="label"   select="'includes_relation'" />
+</xsl:call-template>
+
+\end{subsection}
+
+\begin{subsection}{$Follow$ function}
+
+The $Follow$ function projects each non-terminal transition
+to terminal symbols that can follow the transition non-terminal in a sentential
+form whose prefix accesses the transition state.
+
+\begin{center}
+\begin{math}
+Follow(p, A) =_s Read(p, A) \; \cup \; \bigcup \{Follow(p', B) \;|\; (p, A) \: includes \: (p', B)\}
+\end{math}
+\end{center}
+
+Note that to save space, only those states and non-terminal symbols
+that form a transition for which $Follow$ is non-empty are included in the table, below.
+
+\begin{paragraph}{}
+<xsl:call-template name="transition-to-terminals-table">
+  <xsl:with-param name="name"    select="'Follow'" />
+  <xsl:with-param name="caption" select="'&dollar;Follow&dollar; function'" />
+  <xsl:with-param name="label"   select="'Follow_function'" />
+  <xsl:with-param name="root"    select="/lr-parser/Follow" />
+</xsl:call-template>
+\end{paragraph}
+\end{subsection}
+
+\begin{subsection}{$lookback$ relation}
+
+The $lookback$ relation desribes the observation that look-ahead terminals
+for state $q$ and rule $A \to \omega$ includes all terminals that follow
+transitions $(p, A)$ if there is a transition path from $p$ to $q$ under $\gamma$.
+The $lookback$ relation is shown on Figure \ref{lookback_relation}.
+
+\begin{center}
+\begin{math}
+(q, A \to \gamma) \: lookback \: (p, A)
+\iff
+p \: - \buildrel \gamma \over \dots \to \: q
+\end{math}
+\end{center}
+
+<xsl:call-template name="figure">
+  <xsl:with-param name="file"    select="'lr_parser.lookback.eps'" />
+  <xsl:with-param name="caption" select="'&dollar;lookback&dollar; relation'" />
+  <xsl:with-param name="label"   select="'lookback_relation'" />
+</xsl:call-template>
+
+\end{subsection}
+
+\begin{subsection}{Look-ahead table}
+
+The LA table assigns sets of terminal symbols to (state, rule) couples.
+A terminal belongs to an LA set if and only if the terminal follows
+reduction by the rule accessing the state.
+
+\begin{center}
+\begin{math}
+LA(q, A \to \omega) = \{t \in T \; | \; S \Rightarrow^+ \alpha A t z \; \land \; \alpha \omega \: access \: q\}
+\end{math}
+\end{center}
+
+The $LA$ sets may also be described as unions of Follow values for transitions
+for which there exists derivation of their non-terminals via appropriate rule.
+
+\begin{center}
+\begin{math}
+LA(q, A \to \omega) = \bigcup \{Follow(p, A) \; | \; (q, A \to \omega) \: lookback \: (p, A)\}
+\end{math}
+\end{center}
+
+Note that to save space, only non-empty $LA$ sets are included in the table, below.
+Also note that rule numbers are shown above their derivation arrows.
+
+\begin{paragraph}{}
+<xsl:call-template name="look-ahead-table" />
+\end{paragraph}
+\end{subsection}
+
+</xsl:if>
+
+\end{section}
+\clearpage
+
+
+\begin{appendix}
+
+\begin{section}{Project definition file}
+\label{project_def_file}
+\scriptsize
+\verbatiminput{../def_file}
+\end{section}
+
+\end{appendix}
+
+\end{document}
+
+</xsl:template>
+
+</xsl:stylesheet>

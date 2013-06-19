@@ -1,0 +1,1828 @@
+<?xml version="1.0"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY dquote "&#34;">
+<!ENTITY quote  "&#39;">
+<!ENTITY dots   "&#133;">
+<!ENTITY dollar "&#36;">
+<!ENTITY eol    "&#10;">
+]>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:ctx-fryer="ctx-fryer"
+                xmlns:math="math"
+                version="1.0">
+
+<xsl:output method="text" encoding="ISO-8859-1" />
+<xsl:strip-space elements="*" />
+
+<!-- max -->
+<xsl:template name="max">
+  <xsl:param name="arg1" data-type="number" />
+  <xsl:param name="arg2" data-type="number" />
+  <xsl:choose>
+    <xsl:when test="$arg1 &gt; $arg2"><xsl:value-of select="$arg1" /></xsl:when>
+    <xsl:otherwise><xsl:value-of select="$arg2" /></xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<!-- Pad string with spaces (from right) to defined length -->
+<xsl:template name="pad-string">
+  <xsl:param name="string"   data-type="string" />
+  <xsl:param name="length"   data-type="number" />
+  <xsl:param name="pad-at"   data-type="string" select="'left'" />
+  <xsl:param name="pad-char" data-type="string" select="' '" />
+  <xsl:variable name="to-go" data-type="number" select="$length - string-length($string)" />
+  <xsl:choose>
+    <xsl:when test="$to-go &lt;= 0">
+      <xsl:value-of select="$string" />
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:variable name="padded-string">
+        <xsl:choose>
+          <xsl:when test="$pad-at = 'left'">
+            <xsl:value-of select="concat($pad-char, $string)" />
+          </xsl:when>
+          <xsl:when test="$pad-at = 'right'">
+            <xsl:value-of select="concat($string, $pad-char)" />
+          </xsl:when>
+          <xsl:otherwise>
+            <!-- LOGICAL ERROR (but how can it be propagated?) -->
+            <xsl:value-of select="'INTERNAL ERROR'" />
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <xsl:call-template name="pad-string">
+        <xsl:with-param name="string"   select="$padded-string" />
+        <xsl:with-param name="length"   select="$length" />
+        <xsl:with-param name="pad-at"   select="$pad-at" />
+        <xsl:with-param name="pad-char" select="$pad-char" />
+      </xsl:call-template>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<!-- Maximal node text string length -->
+<xsl:template name="max-string-length">
+  <xsl:param name="nodes" />
+  <xsl:param name="min" data-type="number" select="0" />
+  <xsl:choose>
+    <xsl:when test="count($nodes) = 0">
+      <xsl:value-of select="$min" />
+    </xsl:when>
+    <xsl:when test="count($nodes) = 1">
+      <xsl:value-of select="string-length(string($nodes[position() = 1]))" />
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:variable name="even-maxlen">
+        <xsl:call-template name="max-string-length">
+          <xsl:with-param name="nodes" select="$nodes[position() mod 2 = 0]" />
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:variable name="odd-maxlen">
+        <xsl:call-template name="max-string-length">
+          <xsl:with-param name="nodes" select="$nodes[position() mod 2 != 0]" />
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:choose>
+        <xsl:when test="$even-maxlen &gt; $odd-maxlen">
+          <xsl:value-of select="$even-maxlen" />
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$odd-maxlen" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<xsl:variable name="root-id"          select="/lr-parser/grammar/@root-non-terminal-id" />
+<xsl:variable name="root-ident"       select="/lr-parser/grammar/non-terminals/list/list-item/non-terminal-symbol[@id = $root-id]/@identifier" />
+<xsl:variable name="terminal-cnt"     select="/lr-parser/grammar/terminals/list/@size" />
+<xsl:variable name="non-terminal-cnt" select="/lr-parser/grammar/non-terminals/list/@size" />
+<xsl:variable name="rule-cnt"         select="/lr-parser/grammar/rules/list/@size" />
+<xsl:variable name="state-cnt"        select="/lr-parser/item-sets/list/@size" />
+<xsl:variable name="eof-id"           select="/lr-parser/action-table/@eof-id" />
+<xsl:variable name="eof-ident"        select="'EOF'" />
+
+<xsl:variable name="terminal-noeof-maxlen" data-type="number">
+  <xsl:call-template name="max-string-length">
+    <xsl:with-param name="nodes" select="/lr-parser/grammar/terminals/list/list-item/terminal-symbol/@identifier" />
+  </xsl:call-template>
+</xsl:variable>
+<xsl:variable name="terminal-maxlen" data-type="number">
+  <xsl:call-template name="max">
+    <xsl:with-param name="arg1" select="$terminal-noeof-maxlen" />
+    <xsl:with-param name="arg2" select="string-length($eof-ident)" />
+  </xsl:call-template>
+</xsl:variable>
+
+<xsl:variable name="non-terminal-noroot-maxlen" data-type="number">
+  <xsl:call-template name="max-string-length">
+    <xsl:with-param name="nodes" select="/lr-parser/grammar/non-terminals/list/list-item/non-terminal-symbol[not(@id = $root-id)]/@identifier" />
+  </xsl:call-template>
+</xsl:variable>
+<xsl:variable name="non-terminal-maxlen" data-type="number">
+  <xsl:call-template name="max">
+    <xsl:with-param name="arg1" select="$non-terminal-noroot-maxlen" />
+    <xsl:with-param name="arg2" select="string-length($root-ident)" />
+  </xsl:call-template>
+</xsl:variable>
+
+<xsl:variable name="grammar-symbol-maxlen" data-type="number">
+  <xsl:call-template name="max">
+    <xsl:with-param name="arg1" select="$terminal-maxlen" />
+    <xsl:with-param name="arg2" select="$non-terminal-maxlen" />
+  </xsl:call-template>
+</xsl:variable>
+
+<xsl:variable name="rule-number-maxlen">
+  <xsl:call-template name="max-string-length">
+    <xsl:with-param name="nodes" select="/lr-parser/grammar/rules/list/list-item/rule/@number" />
+  </xsl:call-template>
+</xsl:variable>
+
+<xsl:variable name="state-id-maxlen">
+  <xsl:call-template name="max-string-length">
+    <xsl:with-param name="nodes" select="/lr-parser/item-sets/list/list-item/@index" />
+  </xsl:call-template>
+</xsl:variable>
+
+<xsl:variable name="shift-actions" select="/lr-parser/action-table/table/table-entry[list/list-item/shift/@is-valid = 'true' and not(list/list-item/shift/@state-id = preceding-sibling::table-entry/list/list-item/shift[@is-valid = 'true']/@state-id)]/list/list-item/shift" />
+<xsl:variable name="shift-action-next-state-maxlen" data-type="number">
+  <xsl:call-template name="max-string-length">
+    <xsl:with-param name="nodes" select="$shift-actions/@state-id" />
+  </xsl:call-template>
+</xsl:variable>
+
+<xsl:variable name="shift-action-ident-prefix" data-type="string" select="'s'" />
+<xsl:variable name="shift-action-ident-maxlen" data-type="number" select="$shift-action-next-state-maxlen + string-length($shift-action-ident-prefix)" />
+
+<xsl:variable name="reduce-actions" select="/lr-parser/action-table/table/table-entry[list/list-item/reduce/@is-valid = 'true' and not(list/list-item/reduce/@rule-number = preceding-sibling::table-entry/list/list-item/reduce[@is-valid = 'true']/@rule-number)]/list/list-item/reduce" />
+<xsl:variable name="reduce-action-rule-number-maxlen" data-type="number">
+  <xsl:call-template name="max-string-length">
+    <xsl:with-param name="nodes" select="$reduce-actions/@rule-number" />
+  </xsl:call-template>
+</xsl:variable>
+
+<xsl:variable name="reduce-action-ident-prefix" data-type="string" select="'r'" />
+<xsl:variable name="reduce-action-ident-maxlen" data-type="number" select="$reduce-action-rule-number-maxlen + string-length($reduce-action-ident-prefix)" />
+
+<xsl:variable name="accept-action-ident" data-type="string" select="'acc'" />
+<xsl:variable name="accept-action-ident-length" data-type="number" select="string-length($accept-action-ident)" />
+
+<xsl:variable name="shift-reduce-action-ident-maxlen">
+  <xsl:call-template name="max">
+    <xsl:with-param name="arg1" select="$shift-action-ident-maxlen" />
+    <xsl:with-param name="arg2" select="$reduce-action-ident-maxlen" />
+  </xsl:call-template>
+</xsl:variable>
+<xsl:variable name="action-ident-maxlen" data-type="number">
+  <xsl:call-template name="max">
+    <xsl:with-param name="arg1" select="$shift-reduce-action-ident-maxlen" />
+    <xsl:with-param name="arg2" select="$accept-action-ident-length" />
+  </xsl:call-template>
+</xsl:variable>
+
+
+<!-- Action identifier generator -->
+<xsl:template name="action-ident">
+  <xsl:param name="action" />
+  <xsl:param name="pad-length" data-type="number" select="0" />
+  <xsl:param name="pad-at"     data-type="string" select="'right'" />
+  <xsl:variable name="ident">
+    <xsl:choose>
+      <xsl:when test="name($action) = 'shift'">
+        <xsl:value-of select="concat($shift-action-ident-prefix, $action/@state-id)" />
+      </xsl:when>
+      <xsl:when test="name($action) = 'reduce'">
+        <xsl:value-of select="concat($reduce-action-ident-prefix, $action/@rule-number)" />
+      </xsl:when>
+      <xsl:when test="name($action) = 'accept'">
+        <xsl:value-of select="'acc'" />
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="'#error &dquote;GENERATOR ERROR: Unknown action&dquote;'" />
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  <xsl:choose>
+    <xsl:when test="$pad-length &gt; 0">
+      <xsl:call-template name="pad-string">
+        <xsl:with-param name="string" select="$ident" />
+        <xsl:with-param name="length" select="$pad-length" />
+        <xsl:with-param name="pad-at" select="$pad-at" />
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$ident" />
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<!-- Action definition generator -->
+<xsl:template name="action-definition">
+  <xsl:param name="action" />
+  <xsl:choose>
+    <xsl:when test="name($action) = 'shift'">
+      <xsl:value-of select="concat('{ .type = SA_ACTION_SHIFT, .t.shift.next_state = ', $action/@state-id, ' }')" />
+    </xsl:when>
+    <xsl:when test="name($action) = 'reduce'">
+      <xsl:value-of select="concat('{ .type = SA_ACTION_REDUCE, .t.reduce.rule_no = ', $action/@rule-number, ' }')" />
+    </xsl:when>
+    <xsl:when test="name($action) = 'accept'">
+      <xsl:value-of select="'{ .type = SA_ACTION_ACCEPT, }'" />
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="'#error &dquote;GENERATOR ERROR: Unknown action&dquote;'" />
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<!-- Action pointer getter -->
+<xsl:template name="get-action-ptr">
+  <xsl:param name="state"       data-type="number" />
+  <xsl:param name="terminal-id" data-type="string" />
+  <xsl:variable name="action-entry" select="/lr-parser/action-table/table/table-entry[@key0 = $state and @key1 = $terminal-id]" />
+  <xsl:choose>
+    <xsl:when test="$action-entry">
+      <xsl:variable name="valid-action" select="$action-entry/list/list-item/*[@is-valid = 'true']" />
+      <xsl:choose>
+        <xsl:when test="count($valid-action) = 1">
+          <xsl:variable name="ident">
+            <xsl:call-template name="action-ident">
+              <xsl:with-param name="action" select="$valid-action" />
+            </xsl:call-template>
+          </xsl:variable>
+          <xsl:value-of select="concat('&amp;', $ident)" />
+        </xsl:when>
+        <xsl:when test="count($valid-action) = 0">
+          <xsl:value-of select="'NULL'" />
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="'#error &dquote;GNERATOR ERROR: Multiple actions defined&dquote;'" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="'NULL'" />
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<!-- Function specification -> C identifier -->
+<xsl:template name="function-spec-to-C">
+  <xsl:param name="spec"     data-type="string" />
+  <xsl:param name="arity"    data-type="number" />
+  <xsl:param name="augment"  data-type="string" select="'true'" />
+  <xsl:param name="fallback" data-type="string" select="'undefined_function'" />
+  <xsl:choose>
+    <xsl:when test="string-length($spec) &gt; 0">
+      <xsl:variable name="builtin-prefix"     select="'builtin::'" />
+      <xsl:variable name="builtin-prefix-len" select="string-length($builtin-prefix)" />
+      <xsl:variable name="base">
+        <xsl:choose>
+          <xsl:when test="substring($spec, 1, $builtin-prefix-len) = $builtin-prefix">
+            <!--xsl:if test="$augment = 'true'"-->
+              <xsl:text>builtin__</xsl:text>
+            <!--/xsl:if-->
+            <xsl:value-of select="substring($spec, $builtin-prefix-len + 1)" />
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:if test="$augment = 'true'">
+              <xsl:text>external__</xsl:text>
+            </xsl:if>
+            <xsl:value-of select="$spec" />
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <xsl:choose>
+        <xsl:when test="$augment = 'true'">
+          <xsl:value-of select="concat($base, '__arity', $arity)" />
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$base" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$fallback" />
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<!-- Hexadecimal digit to decimal number conversion -->
+<xsl:template name="hexadecimal-digit-to-number">
+  <xsl:param name="digit" data-type="string" />
+  <xsl:choose>
+    <xsl:when test="$digit = '0'">0</xsl:when>
+    <xsl:when test="$digit = '1'">1</xsl:when>
+    <xsl:when test="$digit = '2'">2</xsl:when>
+    <xsl:when test="$digit = '3'">3</xsl:when>
+    <xsl:when test="$digit = '4'">4</xsl:when>
+    <xsl:when test="$digit = '5'">5</xsl:when>
+    <xsl:when test="$digit = '6'">6</xsl:when>
+    <xsl:when test="$digit = '7'">7</xsl:when>
+    <xsl:when test="$digit = '8'">8</xsl:when>
+    <xsl:when test="$digit = '9'">9</xsl:when>
+    <xsl:when test="$digit = 'a'">10</xsl:when>
+    <xsl:when test="$digit = 'b'">11</xsl:when>
+    <xsl:when test="$digit = 'c'">12</xsl:when>
+    <xsl:when test="$digit = 'd'">13</xsl:when>
+    <xsl:when test="$digit = 'e'">14</xsl:when>
+    <xsl:when test="$digit = 'f'">15</xsl:when>
+    <xsl:when test="$digit = 'A'">10</xsl:when>
+    <xsl:when test="$digit = 'B'">11</xsl:when>
+    <xsl:when test="$digit = 'C'">12</xsl:when>
+    <xsl:when test="$digit = 'D'">13</xsl:when>
+    <xsl:when test="$digit = 'E'">14</xsl:when>
+    <xsl:when test="$digit = 'F'">15</xsl:when>
+    <xsl:otherwise>nan</xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- Compare hexadecimal strings of the same lengths -->
+<xsl:template name="compare-hexadecimal-strings-of-equal-length">
+  <xsl:param name="str1" data-type="string" />
+  <xsl:param name="str2" data-type="string" />
+  <xsl:param name="len"  data-type="number" />
+  <xsl:choose>
+    <xsl:when test="$len = 0">
+      <xsl:value-of select="0" />
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:variable name="digit1_dec" data-type="number">
+        <xsl:call-template name="hexadecimal-digit-to-number">
+          <xsl:with-param name="digit" select="substring($str1, 1, 1)" />
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:variable name="digit2_dec" data-type="number">
+        <xsl:call-template name="hexadecimal-digit-to-number">
+          <xsl:with-param name="digit" select="substring($str2, 1, 1)" />
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:choose>
+        <xsl:when test="$digit1_dec = $digit2_dec">
+          <xsl:call-template name="compare-hexadecimal-strings-of-equal-length">
+            <xsl:with-param name="str1" select="substring($str1, 2)" />
+            <xsl:with-param name="str2" select="substring($str2, 2)" />
+            <xsl:with-param name="len"  select="$len - 1" />
+          </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$digit1_dec - $digit2_dec" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- Compare hexadecimal numbers stripped of their (0x)?0* prefix -->
+<xsl:template name="compare-stripped-hexadecimal-numbers">
+  <xsl:param name="num1" data-type="string" />
+  <xsl:param name="num2" data-type="string" />
+  <xsl:variable name="num1_len" data-type="number" select="string-length($num1)" />
+  <xsl:variable name="num2_len" data-type="number" select="string-length($num2)" />
+  <xsl:choose>
+    <xsl:when test="$num1_len = $num2_len">
+      <xsl:call-template name="compare-hexadecimal-strings-of-equal-length">
+        <xsl:with-param name="str1" select="$num1" />
+        <xsl:with-param name="str2" select="$num2" />
+        <xsl:with-param name="len"  select="$num1_len" />
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$num1_len - $num2_len" />
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- Strip 0* prefix off a hexadecimal number -->
+<xsl:template name="strip-hexadecimal-number-0-prefix">
+  <xsl:param name="num" data-type="string" />
+  <xsl:choose>
+    <xsl:when test="starts-with($num, '0')">
+      <xsl:call-template name="strip-hexadecimal-number-0-prefix">
+        <xsl:with-param name="num" select="substring($num, 2)" />
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$num" />
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- Strip (0x)?0* prefix off a hexadecimal number -->
+<xsl:template name="strip-hexadecimal-number-prefix">
+  <xsl:param name="num" data-type="string" />
+  <xsl:variable name="num-no-0x" data-type="string">
+    <xsl:choose>
+      <xsl:when test="starts-with($num, '0x')">
+        <xsl:value-of select="substring($num, 3)" />
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$num" />
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  <xsl:call-template name="strip-hexadecimal-number-0-prefix">
+    <xsl:with-param name="num" select="$num-no-0x" />
+  </xsl:call-template>
+</xsl:template>
+
+<!-- Compare hexadecimal numbers -->
+<xsl:template name="compare-hexadecimal-numbers">
+  <xsl:param name="num1" data-type="string" />
+  <xsl:param name="num2" data-type="string" />
+  <xsl:variable name="num1-stripped" data-type="string">
+    <xsl:call-template name="strip-hexadecimal-number-prefix">
+      <xsl:with-param name="num" select="$num1" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="num2-stripped" data-type="string">
+    <xsl:call-template name="strip-hexadecimal-number-prefix">
+      <xsl:with-param name="num" select="$num2" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:call-template name="compare-stripped-hexadecimal-numbers">
+    <xsl:with-param name="num1" select="$num1-stripped" />
+    <xsl:with-param name="num2" select="$num2-stripped" />
+  </xsl:call-template>
+</xsl:template>
+
+
+<!-- Grammar symbol attribute index getter (in type:ID lexicographical order) -->
+<xsl:template name="get-attribute-index">
+  <xsl:param name="symbol" />
+  <xsl:param name="attribute" />
+  <xsl:variable name="count-unary" data-type="string">
+    <xsl:for-each select="$symbol/attribute">
+      <xsl:variable name="type_cmp" data-type="number">
+        <xsl:choose>
+          <xsl:when test="@type = $attribute/@type">
+            <xsl:text>0</xsl:text>
+          </xsl:when>
+          <xsl:when test="'aggregated' = @type">
+            <xsl:text>-1</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>1</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <xsl:if test="$type_cmp &lt; 0"><xsl:text>I</xsl:text></xsl:if>
+      <xsl:variable name="id_cmp" data-type="number">
+        <xsl:call-template name="compare-hexadecimal-numbers">
+          <xsl:with-param name="num1" select="@id" />
+          <xsl:with-param name="num2" select="$attribute/@id" />
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:choose>
+        <xsl:when test="$type_cmp &lt; 0">
+          <xsl:text>I</xsl:text>
+        </xsl:when>
+        <xsl:when test="$type_cmp = 0">
+          <xsl:if test="$id_cmp &lt; 0">
+            <xsl:text>I</xsl:text>
+          </xsl:if>
+        </xsl:when>
+      </xsl:choose>
+    </xsl:for-each>
+  </xsl:variable>
+  <xsl:value-of select="string-length($count-unary)" />
+</xsl:template>
+
+
+<!-- Filter string of sorted characters so that each one is uniquely contained -->
+<xsl:template name="unique-filter-sorted-chars">
+  <xsl:param name="chars"  data-type="string" />
+  <xsl:param name="at"     data-type="number" select="0" />
+  <xsl:param name="result" data-type="string" select="''" />
+  <xsl:variable name="result-len" data-type="number" select="string-length($result)" />
+  <xsl:choose>
+    <xsl:when test="$at &lt; string-length($chars)">
+      <xsl:choose>
+        <xsl:when test="$result-len &gt; 0">
+          <xsl:variable name="chars-at" data-type="string" select="substring($chars, $at + 1, 1)" />
+          <xsl:variable name="new-result" data-type="string">
+            <xsl:choose>
+              <xsl:when test="substring($result, $result-len, 1) = $chars-at">
+                <xsl:value-of select="$result" />
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="concat($result, $chars-at)" />
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:variable>
+          <xsl:call-template name="unique-filter-sorted-chars">
+            <xsl:with-param name="chars"  select="$chars" />
+            <xsl:with-param name="result" select="$new-result" />
+            <xsl:with-param name="at"     select="$at + 1" />
+          </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="unique-filter-sorted-chars">
+            <xsl:with-param name="chars"  select="$chars" />
+            <xsl:with-param name="result" select="substring($chars, 1, 1)" />
+            <xsl:with-param name="at"     select="1" />
+          </xsl:call-template>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise><xsl:value-of select="$result" /></xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- Get string of lexicographically sorted unique characters at an offset -->
+<xsl:template name="get-unique-sorted-chars-at-offset">
+  <xsl:param name="strings" />
+  <xsl:param name="offset" data-type="number" />
+  <xsl:variable name="all-sorted-chars-at-offset">
+    <xsl:for-each select="$strings">
+      <xsl:sort select="substring(., $offset + 1, 1)" />
+      <xsl:value-of select="substring(., $offset + 1, 1)" />
+    </xsl:for-each>
+  </xsl:variable>
+  <xsl:call-template name="unique-filter-sorted-chars">
+    <xsl:with-param name="chars"  select="$all-sorted-chars-at-offset" />
+  </xsl:call-template>
+</xsl:template>
+
+<!-- Generate symbol attribute names resolution FSA nodes (descend to depth) -->
+<xsl:template name="generate-attr-names-FSA-depth">
+  <xsl:param name="symbol" />
+  <xsl:param name="offset" data-type="number" />
+  <xsl:param name="attrs" />
+  <xsl:param name="chars"  data-type="string" />
+  <xsl:param name="at"     data-type="number" select="0" />
+  <xsl:param name="prefix" data-type="string" />
+  <xsl:if test="$at &lt; string-length($chars)">
+    <xsl:variable name="char" data-type="string" select="substring($chars, $at + 1, 1)" />
+    <xsl:variable name="char-attrs" select="$attrs[substring(@identifier, $offset + 1, 1) = $char]" />
+    <xsl:call-template name="generate-attr-names-FSA-node">
+      <xsl:with-param name="symbol" select="$symbol" />
+      <xsl:with-param name="offset" select="$offset + 1" />
+      <xsl:with-param name="attrs"  select="$char-attrs" />
+      <xsl:with-param name="prefix" select="concat($prefix, $char)" />
+    </xsl:call-template>
+    <xsl:call-template name="generate-attr-names-FSA-depth">
+      <xsl:with-param name="symbol" select="$symbol" />
+      <xsl:with-param name="offset" select="$offset" />
+      <xsl:with-param name="attrs"  select="$attrs" />
+      <xsl:with-param name="chars"  select="$chars" />
+      <xsl:with-param name="at"     select="$at + 1" />
+      <xsl:with-param name="prefix" select="$prefix" />
+    </xsl:call-template>
+  </xsl:if>
+</xsl:template>
+
+<!-- Generate symbol attribute names resolution FSA locator -->
+<xsl:template name="generate-attr-names-FSA-locator">
+  <xsl:param name="symbol" />
+  <xsl:param name="attribute" />
+  <xsl:text>/** Symbol </xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text> attribute </xsl:text>
+  <xsl:value-of select="$attribute/@identifier" />
+  <xsl:text> resolution FSA */&eol;</xsl:text>
+  <xsl:text>static const attr_name_fsa_t sym_</xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text>_attr_name_fsa_</xsl:text>
+  <xsl:value-of select="$attribute/@identifier" />
+  <xsl:text>_leaf = {&eol;</xsl:text>
+  <xsl:text>    .locator = {&eol;</xsl:text>
+  <xsl:text>        .index = </xsl:text>
+  <xsl:call-template name="get-attribute-index">
+    <xsl:with-param name="symbol"    select="$symbol" />
+    <xsl:with-param name="attribute" select="$attribute" />
+  </xsl:call-template>
+  <xsl:text>,&eol;</xsl:text>
+  <xsl:text>    }&eol;</xsl:text>
+  <xsl:text>};&eol;&eol;</xsl:text>
+</xsl:template>
+
+<!-- Generate symbol attribute names resolution FSA branches -->
+<xsl:template name="generate-attr-names-FSA-branches">
+  <xsl:param name="symbol" />
+  <xsl:param name="offset" data-type="number" />
+  <xsl:param name="chars"  data-type="string" />
+  <xsl:param name="at"     data-type="number" select="0" />
+  <xsl:param name="prefix" data-type="string" />
+  <xsl:if test="$at &lt; string-length($chars)">
+    <xsl:variable name="char" data-type="string" select="substring($chars, $at + 1, 1)" />
+    <xsl:variable name="new-prefix" data-type="string" select="concat($prefix, $char)" />
+    <xsl:text>    /* </xsl:text>
+    <xsl:value-of select="$new-prefix" />
+    <xsl:text> prefix */  {&eol;</xsl:text>
+    <xsl:text>        .character = '</xsl:text>
+    <xsl:value-of select="$char" />
+    <xsl:text>',&eol;</xsl:text>
+    <xsl:text>        .sub_fsa   = &amp;sym_</xsl:text>
+    <xsl:value-of select="$symbol/@identifier" />
+    <xsl:text>_attr_name_fsa_</xsl:text>
+    <xsl:value-of select="$new-prefix" />
+    <xsl:text>&eol;    },&eol;</xsl:text>
+    <xsl:call-template name="generate-attr-names-FSA-branches">
+      <xsl:with-param name="symbol" select="$symbol" />
+      <xsl:with-param name="offset" select="$offset" />
+      <xsl:with-param name="chars"  select="$chars" />
+      <xsl:with-param name="at"     select="$at + 1" />
+      <xsl:with-param name="prefix" select="$prefix" />
+    </xsl:call-template>
+  </xsl:if>
+</xsl:template>
+
+<!-- Generate symbol attribute names resolution FSA nodes -->
+<xsl:template name="generate-attr-names-FSA-node">
+  <xsl:param name="symbol" />
+  <xsl:param name="offset" data-type="number" select="0" />
+  <xsl:param name="attrs"  select="$symbol/attribute" />
+  <xsl:param name="prefix" data-type="string" select="''" />
+  <xsl:variable name="done-attr"  select="$attrs[string-length(@identifier) = $offset]" />
+  <xsl:variable name="todo-attrs" select="$attrs[string-length(@identifier) &gt; $offset]" />
+  <xsl:variable name="chars-at-offset">
+    <xsl:call-template name="get-unique-sorted-chars-at-offset">
+      <xsl:with-param name="strings" select="$todo-attrs/@identifier" />
+      <xsl:with-param name="offset"  select="$offset" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:call-template name="generate-attr-names-FSA-depth">
+    <xsl:with-param name="symbol" select="$symbol" />
+    <xsl:with-param name="offset" select="$offset" />
+    <xsl:with-param name="attrs"  select="$todo-attrs" />
+    <xsl:with-param name="chars"  select="$chars-at-offset" />
+    <xsl:with-param name="prefix" select="$prefix" />
+  </xsl:call-template>
+  <xsl:if test="count($done-attr) &gt; 0">
+    <xsl:call-template name="generate-attr-names-FSA-locator">
+      <xsl:with-param name="symbol"    select="$symbol" />
+      <xsl:with-param name="attribute" select="$done-attr" />
+    </xsl:call-template>
+  </xsl:if>
+  <xsl:text>/** Symbol </xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text> attribute names resolution FSA branches */&eol;</xsl:text>
+  <xsl:text>static const attr_name_fsa_branch_t sym_</xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text>_attr_name_fsa_</xsl:text>
+  <xsl:value-of select="$prefix" />
+  <xsl:text>_branches[</xsl:text>
+  <xsl:value-of select="count($attrs)" />
+  <xsl:text>] = {&eol;</xsl:text>
+  <xsl:if test="count($done-attr) &gt; 0">
+    <xsl:text>    /* </xsl:text>
+    <xsl:value-of select="$done-attr/@identifier" />
+    <xsl:text> (done) */  {&eol;</xsl:text>
+    <xsl:text>        .character = '\0',&eol;</xsl:text>
+    <xsl:text>        .sub_fsa   = &amp;sym_</xsl:text>
+    <xsl:value-of select="$symbol/@identifier" />
+    <xsl:text>_attr_name_fsa_</xsl:text>
+    <xsl:value-of select="$done-attr/@identifier" />
+    <xsl:text>_leaf&eol;    },&eol;</xsl:text>
+  </xsl:if>
+  <xsl:call-template name="generate-attr-names-FSA-branches">
+    <xsl:with-param name="symbol" select="$symbol" />
+    <xsl:with-param name="offset" select="$offset" />
+    <xsl:with-param name="chars"  select="$chars-at-offset" />
+    <xsl:with-param name="prefix" select="$prefix" />
+  </xsl:call-template>
+  <xsl:text>};&eol;&eol;</xsl:text>
+  <xsl:text>/** Symbol </xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text> attribute names resolution FSA */&eol;</xsl:text>
+  <xsl:text>static const attr_name_fsa_t sym_</xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text>_attr_name_fsa_</xsl:text>
+  <xsl:value-of select="$prefix" />
+  <xsl:text> = {&eol;</xsl:text>
+  <xsl:text>    .node = {&eol;</xsl:text>
+  <xsl:text>        .branch_cnt = </xsl:text>
+  <xsl:value-of select="count($attrs)" />
+  <xsl:text>,&eol;</xsl:text>
+  <xsl:text>        .branches   = &amp;sym_</xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text>_attr_name_fsa_</xsl:text>
+  <xsl:value-of select="$prefix" />
+  <xsl:text>_branches</xsl:text>
+  <xsl:text>&eol;    }&eol;</xsl:text>
+  <xsl:text>};&eol;&eol;</xsl:text>
+</xsl:template>
+
+<!-- Generate symbols attribute names resolution FSA -->
+<xsl:template name="generate-attr-names-FSA">
+  <xsl:param name="symbols" />
+  <xsl:param name="identifier" data-type="string" />
+  <xsl:param name="comment" data-type="string" />
+  <xsl:for-each select="$symbols">
+    <xsl:sort select="@id" />
+    <xsl:if test="count(attribute) &gt; 0">
+      <xsl:call-template name="generate-attr-names-FSA-node">
+        <xsl:with-param name="symbol" select="." />
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:for-each>
+  <xsl:variable name="symbol-ident-maxlen">
+    <xsl:call-template name="max-string-length">
+      <xsl:with-param name="nodes" select="$symbols/@identifier" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:text>/** </xsl:text>
+  <xsl:value-of select="$comment" />
+  <xsl:text> */&eol;</xsl:text>
+  <xsl:text>static const attr_name_fsa_t *</xsl:text>
+  <xsl:value-of select="$identifier" />
+  <xsl:text>[</xsl:text>
+  <xsl:value-of select="count($symbols)" />
+  <xsl:text>] = {&eol;</xsl:text>
+  <xsl:for-each select="$symbols">
+    <xsl:sort select="@id" />
+    <xsl:text>    /* </xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="@identifier" />
+      <xsl:with-param name="length" select="$symbol-ident-maxlen" />
+      <xsl:with-param name="pad-at" select="'left'" />
+    </xsl:call-template>
+    <xsl:text> */  </xsl:text>
+    <xsl:choose>
+      <xsl:when test="count(attribute) &gt; 0">
+        <xsl:text>&amp;sym_</xsl:text>
+        <xsl:value-of select="@identifier" />
+        <xsl:text>_attr_name_fsa_</xsl:text>
+      </xsl:when>
+      <xsl:otherwise><xsl:text>NULL</xsl:text></xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>,&eol;</xsl:text>
+  </xsl:for-each>
+  <xsl:text>};&eol;</xsl:text>
+</xsl:template>
+
+
+<!-- Grammar symbol attributes class descriptors generator -->
+<xsl:template name="generate-attr-class-descriptors">
+  <xsl:param name="symbols" />
+  <xsl:for-each select="$symbols">
+    <xsl:sort select="@id" />
+    <xsl:if test="count(attribute) &gt; 0">
+      <xsl:text>/** Grammar symbol </xsl:text>
+      <xsl:value-of select="@identifier" />
+      <xsl:text> attribute class descriptors */&eol;</xsl:text>
+      <xsl:text>static const attr_class_descr_t sym_</xsl:text>
+      <xsl:value-of select="@identifier" />
+      <xsl:text>_attr_class_descrs[</xsl:text>
+      <xsl:value-of select="count(attribute)" />
+      <xsl:text>] = {&eol;</xsl:text>
+      <xsl:for-each select="attribute">
+        <xsl:sort select="concat(@type, @id)" />
+        <xsl:text>    /* </xsl:text>
+        <xsl:value-of select="@identifier" />
+        <xsl:text> */  {&eol;</xsl:text>
+        <xsl:text>        .type    = ATTR_TYPE_</xsl:text>
+        <xsl:choose>
+          <xsl:when test="'aggregated' = @type">
+            <xsl:text>AGGREGATED</xsl:text>
+          </xsl:when>
+          <xsl:when test="'inherited' = @type">
+            <xsl:text>INHERITED</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>INVALID /* INTERNAL ERROR: unknown attr. type */</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:text>,&eol;        .id      = "</xsl:text>
+        <xsl:value-of select="@identifier" />
+        <xsl:text>",&eol;        .destroy = </xsl:text>
+        <xsl:call-template name="function-spec-to-C">
+          <xsl:with-param name="spec"     select="destructor/function/@identifier" />
+          <xsl:with-param name="arity"    select="1" />
+          <xsl:with-param name="fallback" select="'NULL'" />
+        </xsl:call-template>
+        <xsl:text>,&eol;    },&eol;</xsl:text>
+      </xsl:for-each>
+      <xsl:text>};&eol;&eol;</xsl:text>
+    </xsl:if>
+  </xsl:for-each>
+</xsl:template>
+
+
+<!-- Grammar symbols attribute classes array generator -->
+<xsl:template name="generate-attribute-classes">
+  <xsl:param name="symbols" />
+  <xsl:param name="identifier" data-type="string" />
+  <xsl:text>static const attr_classes_t </xsl:text>
+  <xsl:value-of select="$identifier" />
+  <xsl:text>[</xsl:text>
+  <xsl:value-of select="count($symbols)" />
+  <xsl:text>] = {&eol;</xsl:text>
+  <!-- Accepted lexical items -->
+  <xsl:for-each select="$symbols">
+    <xsl:sort select="@id" />
+    <xsl:text>    /* </xsl:text>
+    <xsl:value-of select="@identifier" />
+    <xsl:text> */  {&eol;</xsl:text>
+    <xsl:text>        .class_cnt = </xsl:text>
+    <xsl:value-of select="count(attribute)" />
+    <xsl:text>,&eol;        .classes   = </xsl:text>
+    <xsl:choose>
+      <xsl:when test="count(attribute) &gt; 0">
+        <xsl:text>&amp;sym_</xsl:text>
+        <xsl:value-of select="@identifier" />
+        <xsl:text>_attr_class_descrs</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>NULL</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>,&eol;    },&eol;</xsl:text>
+  </xsl:for-each>
+  <xsl:text>};</xsl:text>
+</xsl:template>
+
+
+<!-- Grammar symbol attribute evaluator descriptor definition generator -->
+<xsl:template name="generate-attr-eval-descriptor-definition">
+  <xsl:param name="symbol" />
+  <xsl:param name="rule" />
+  <xsl:param name="function-spec" data-type="string" />
+  <xsl:param name="dependencies" />
+  <xsl:variable name="symbols" select="/lr-parser/grammar/*/list/list-item/*[count(@identifier) &gt; 0]" />
+  <xsl:text>    .eval       = &amp;</xsl:text>
+  <xsl:call-template name="function-spec-to-C">
+    <xsl:with-param name="spec"  select="$function-spec" />
+    <xsl:with-param name="arity" select="count($dependencies)" />
+  </xsl:call-template>
+  <xsl:text>,&eol;</xsl:text>
+  <xsl:text>    .dep_cnt    = </xsl:text>
+  <xsl:value-of select="count($dependencies)" />
+  <xsl:text>,&eol;</xsl:text>
+  <xsl:text>    .dep_descrs = {&eol;</xsl:text>
+  <xsl:variable name="sym-idx-legend"  data-type="string" select="'Symbol idx'" />
+  <xsl:variable name="attr-idx-legend" data-type="string" select="'Attr. idx'" />
+  <xsl:text>        /* </xsl:text>
+  <xsl:value-of select="$sym-idx-legend" />
+  <xsl:text>   </xsl:text>
+  <xsl:value-of select="$attr-idx-legend" />
+  <xsl:text> */&eol;</xsl:text>
+  <xsl:for-each select="$dependencies">
+    <xsl:variable name="dep-sym-idx" data-type="number">
+      <xsl:choose>
+        <xsl:when test="count(@symbol-number) &gt; 0">
+          <xsl:value-of select="@symbol-number" />
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="0" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="dep-sym-ident" data-type="string">
+      <xsl:choose>
+        <xsl:when test="count(@symbol-number) &gt; 0">
+          <xsl:choose>
+            <xsl:when test="@symbol-number = 0">
+              <xsl:value-of select="$rule/left-side" />
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="$rule/right-side/list/list-item[@index + 1 = $dep-sym-idx]" />
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$symbol/@identifier" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="dep-sym" select="$symbols[@identifier = $dep-sym-ident]" />
+    <xsl:variable name="dep-attr-ident" data-type="string" select="@attribute-identifier" />
+    <xsl:variable name="dep-attr" select="$dep-sym/attribute[@identifier = $dep-attr-ident]" />
+    <xsl:variable name="dep-attr-idx" data-type="number">
+      <xsl:call-template name="get-attribute-index">
+        <xsl:with-param name="symbol"    select="$dep-sym" />
+        <xsl:with-param name="attribute" select="$dep-attr" />
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:text>        {  </xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="$dep-sym-idx" />
+      <xsl:with-param name="length" select="string-length($sym-idx-legend)" />
+    </xsl:call-template>
+    <xsl:text>,  </xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="$dep-attr-idx" />
+      <xsl:with-param name="length" select="string-length($attr-idx-legend)" />
+    </xsl:call-template>
+    <xsl:text> },&eol;</xsl:text>
+  </xsl:for-each>
+  <xsl:text>    }&eol;</xsl:text>
+</xsl:template>
+
+
+<!-- Grammar symbol attribute evaluator descriptor generator -->
+<xsl:template name="generate-attr-eval-descriptor">
+  <xsl:param name="symbol" />
+  <xsl:param name="attribute" />
+  <xsl:param name="function-spec" data-type="string" />
+  <xsl:param name="dependencies" />
+  <xsl:text>/** Grammar symbol </xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text> attribute </xsl:text>
+  <xsl:value-of select="$attribute/@identifier" />
+  <xsl:text> evaluator descriptor */&eol;</xsl:text>
+  <xsl:text>static const attr_eval_descr_t sym_</xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text>_attr_</xsl:text>
+  <xsl:value-of select="$attribute/@identifier" />
+  <xsl:text>_eval_descr = {&eol;</xsl:text>
+    <xsl:call-template name="generate-attr-eval-descriptor-definition">
+      <xsl:with-param name="symbol"        select="$symbol" />
+      <!--xsl:with-param name="rule"          select="" /-->
+      <xsl:with-param name="function-spec" select="$function-spec" />
+      <xsl:with-param name="dependencies"  select="$dependencies" />
+    </xsl:call-template>
+  <xsl:text>};&eol;&eol;</xsl:text>
+</xsl:template>
+
+
+<!-- Grammar symbol attribute evaluator descriptor generator (rule-specific) -->
+<xsl:template name="generate-attr-eval-descriptor-rule-specific">
+  <xsl:param name="symbol" />
+  <xsl:param name="symbol-idx" />
+  <xsl:param name="attribute" />
+  <xsl:param name="rule" />
+  <xsl:param name="function-spec" data-type="string" />
+  <xsl:param name="dependencies" />
+  <xsl:text>/** Grammar symbol </xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text> attribute </xsl:text>
+  <xsl:value-of select="$attribute/@identifier" />
+  <xsl:text> evaluator descriptor (for rule #</xsl:text>
+  <xsl:value-of select="$rule/@number" />
+  <xsl:text>) */&eol;</xsl:text>
+  <xsl:text>static const attr_eval_descr_t sym_</xsl:text>
+  <xsl:value-of select="$symbol/@identifier" />
+  <xsl:text>_idx</xsl:text>
+  <xsl:value-of select="$symbol-idx" />
+  <xsl:text>_attr_</xsl:text>
+  <xsl:value-of select="$attribute/@identifier" />
+  <xsl:text>_rule</xsl:text>
+  <xsl:value-of select="$rule/@number" />
+  <xsl:text>_eval_descr = {&eol;</xsl:text>
+    <xsl:call-template name="generate-attr-eval-descriptor-definition">
+      <xsl:with-param name="symbol"        select="$symbol" />
+      <xsl:with-param name="rule"          select="$rule" />
+      <xsl:with-param name="function-spec" select="$function-spec" />
+      <xsl:with-param name="dependencies"  select="$dependencies" />
+    </xsl:call-template>
+  <xsl:text>};&eol;&eol;</xsl:text>
+</xsl:template>
+
+
+<!-- Grammar symbol attributes evaluator descriptors generator -->
+<xsl:template name="generate-attr-eval-descriptors">
+  <xsl:param name="symbols" />
+  <xsl:param name="rules" />
+  <xsl:for-each select="$symbols">
+    <xsl:sort select="@id" />
+    <xsl:variable name="symbol" select="." />
+    <xsl:for-each select="attribute">
+      <xsl:sort select="concat(@type, @id)" />
+      <xsl:variable name="attr" select="." />
+      <xsl:for-each select="evaluators/list/list-item/function">
+        <xsl:choose>
+          <xsl:when test="count(@rule-id) &gt; 0">
+            <xsl:variable name="rule-id" select="@rule-id" />
+            <xsl:variable name="rule"    select="$rules[@id = $rule-id]" />
+            <xsl:variable name="sym-idx" select="@symbol-number" />
+            <xsl:call-template name="generate-attr-eval-descriptor-rule-specific">
+              <xsl:with-param name="symbol"        select="$symbol" />
+              <xsl:with-param name="symbol-idx"    select="$sym-idx" />
+              <xsl:with-param name="attribute"     select="$attr" />
+              <xsl:with-param name="rule"          select="$rule" />
+              <xsl:with-param name="function-spec" select="@identifier" />
+              <xsl:with-param name="dependencies"  select="arguments/list/list-item/dependency" />
+            </xsl:call-template>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:call-template name="generate-attr-eval-descriptor">
+              <xsl:with-param name="symbol"        select="$symbol" />
+              <xsl:with-param name="attribute"     select="$attr" />
+              <xsl:with-param name="function-spec" select="@identifier" />
+              <xsl:with-param name="dependencies"  select="arguments/list/list-item/dependency" />
+            </xsl:call-template>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:for-each>
+      <xsl:for-each select="evaluators/list/list-item/reference">
+        <xsl:choose>
+          <xsl:when test="count(@rule-id) &gt; 0">
+            <xsl:variable name="rule-id" select="@rule-id" />
+            <xsl:variable name="rule"    select="$rules[@id = $rule-id]" />
+            <xsl:variable name="sym-idx" select="@symbol-number" />
+            <xsl:call-template name="generate-attr-eval-descriptor-rule-specific">
+              <xsl:with-param name="symbol"        select="$symbol" />
+              <xsl:with-param name="symbol-idx"    select="$sym-idx" />
+              <xsl:with-param name="attribute"     select="$attr" />
+              <xsl:with-param name="rule"          select="$rule" />
+              <xsl:with-param name="function-spec" select="'builtin::reference'" />
+              <xsl:with-param name="dependencies"  select="target/dependency" />
+            </xsl:call-template>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:call-template name="generate-attr-eval-descriptor">
+              <xsl:with-param name="symbol"        select="$symbol" />
+              <xsl:with-param name="attribute"     select="$attr" />
+              <xsl:with-param name="function-spec" select="'builtin::reference'" />
+              <xsl:with-param name="dependencies"  select="target/dependency" />
+            </xsl:call-template>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:for-each>
+    </xsl:for-each>
+  </xsl:for-each>
+</xsl:template>
+
+
+<!-- Grammar symbol attributes evaluator descriptors generator -->
+<xsl:template name="generate-explicit-attribute-evaluators">
+  <xsl:param name="symbols" />
+  <xsl:param name="identifier" data-type="string" />
+  <xsl:variable name="symbol-ident-maxlen">
+    <xsl:call-template name="max-string-length">
+      <xsl:with-param name="nodes" select="$symbols[count(attribute) &gt; 0]/@identifier" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:for-each select="$symbols">
+    <xsl:sort select="@id" />
+    <xsl:variable name="symbol" select="." />
+    <xsl:variable name="attr-ident-maxlen">
+      <xsl:call-template name="max-string-length">
+        <xsl:with-param name="nodes" select="attribute/@identifier" />
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:if test="count(attribute) &gt; 0">
+      <xsl:text>/** Grammar symbol </xsl:text>
+      <xsl:value-of select="$symbol/@identifier" />
+      <xsl:text> explicit attribute evaluators */&eol;</xsl:text>
+      <xsl:text>static const attr_eval_descr_refs_t sym_</xsl:text>
+      <xsl:value-of select="$symbol/@identifier" />
+      <xsl:text>_attr_eval_descrs = {&eol;</xsl:text>
+      <xsl:for-each select="attribute">
+        <xsl:sort select="concat(@type, @id)" />
+        <xsl:variable name="attr" select="." />
+        <xsl:text>    /* </xsl:text>
+        <xsl:call-template name="pad-string">
+          <xsl:with-param name="string" select="$attr/@identifier" />
+          <xsl:with-param name="length" select="$attr-ident-maxlen" />
+          <xsl:with-param name="pad-at" select="'left'" />
+        </xsl:call-template>
+        <xsl:text> */  </xsl:text>
+        <xsl:choose>
+          <xsl:when test="count(evaluators/list/list-item/*[count(@rule-id) = 0]) &gt; 0">
+            <xsl:text>&amp;sym_</xsl:text>
+            <xsl:value-of select="$symbol/@identifier" />
+            <xsl:text>_attr_</xsl:text>
+            <xsl:value-of select="$attr/@identifier" />
+            <xsl:text>_eval_descr</xsl:text>
+          </xsl:when>
+          <xsl:otherwise><xsl:text>NULL</xsl:text></xsl:otherwise>
+        </xsl:choose>
+        <xsl:text>,&eol;</xsl:text>
+      </xsl:for-each>
+      <xsl:text>};&eol;&eol;</xsl:text>
+    </xsl:if>
+  </xsl:for-each>
+  <xsl:text>/** Explicit attribute evaluators */&eol;</xsl:text>
+  <xsl:text>static const attr_eval_descr_refs_t *</xsl:text>
+  <xsl:value-of select="$identifier" />
+  <xsl:text>[</xsl:text>
+  <xsl:value-of select="count($symbols)" />
+  <xsl:text>] = {&eol;</xsl:text>
+  <xsl:for-each select="$symbols">
+    <xsl:sort select="@id" />
+    <xsl:text>    /* </xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="@identifier" />
+      <xsl:with-param name="length" select="$symbol-ident-maxlen" />
+      <xsl:with-param name="pad-at" select="'left'" />
+    </xsl:call-template>
+    <xsl:text> */  </xsl:text>
+    <xsl:choose>
+      <xsl:when test="count(attribute) &gt; 0">
+        <xsl:text>&amp;sym_</xsl:text>
+        <xsl:value-of select="@identifier" />
+        <xsl:text>_attr_eval_descrs</xsl:text>
+      </xsl:when>
+      <xsl:otherwise><xsl:text>NULL</xsl:text></xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>,&eol;</xsl:text>
+  </xsl:for-each>
+  <xsl:text>};&eol;&eol;</xsl:text>
+</xsl:template>
+
+
+<!-- Grammar rules symbols attribute evaluators generator -->
+<xsl:template name="generate-implicit-attribute-evaluators">
+  <xsl:param name="rules" />
+  <xsl:param name="terminals" />
+  <xsl:param name="non-terminals" />
+  <xsl:for-each select="$rules">
+    <xsl:variable name="number"    data-type="number" select="@number" />
+    <xsl:variable name="lhs-ident" data-type="string" select="left-side" />
+    <xsl:variable name="lhs-non-terminal"
+        select="/lr-parser/grammar/non-terminals/list/list-item/non-terminal-symbol[@identifier = $lhs-ident]" />
+    <xsl:call-template name="generate-attribute-evaluators-list">
+      <xsl:with-param name="rule-no" select="$number" />
+      <xsl:with-param name="symbol"  select="$lhs-non-terminal" />
+      <xsl:with-param name="ident"   select="concat('rule', $number, '_lhs_attr_evals')" />
+    </xsl:call-template>
+    <xsl:for-each select="right-side/list/list-item">
+      <xsl:variable name="rhs-ident" data-type="string" select="." />
+      <xsl:variable name="rhs-index" data-type="number" select="@index" />
+      <xsl:variable name="rhs-symbol"
+          select="/lr-parser/grammar/*/list/list-item/*[@identifier = $rhs-ident]" />
+      <xsl:call-template name="generate-attribute-evaluators-list">
+        <xsl:with-param name="rule-no" select="$number" />
+        <xsl:with-param name="symbol"  select="$rhs-symbol" />
+        <xsl:with-param name="ident"   select="concat('rule', $number, '_rhs', $rhs-index, '_attr_eval')" />
+      </xsl:call-template>
+    </xsl:for-each>
+  </xsl:for-each>
+</xsl:template>
+
+
+<!-- Grammar rules symbols attribute evaluator references generator -->
+<xsl:template name="generate-implicit-attribute-evaluators-references">
+  <xsl:param name="rule" />
+  <xsl:param name="symbol" />
+  <xsl:param name="symbol-index" data-type="number" />
+  <xsl:variable name="rule-id"   data-type="string" select="$rule/@id" />
+  <xsl:variable name="rule-no"   data-type="number" select="$rule/@number" />
+  <xsl:variable name="sym-ident" data-type="string" select="$symbol/@identifier" />
+  <xsl:for-each select="$symbol/attribute">
+    <xsl:sort select="concat(@type, @id)" />
+    <xsl:variable name="evaluator" select="evaluators/list/list-item/*[@rule-id = $rule-id and @symbol-number = $symbol-index]" />
+    <xsl:text>    </xsl:text>
+    <xsl:choose>
+      <xsl:when test="count($evaluator) &gt; 0">
+        <xsl:text>&amp;sym_</xsl:text>
+        <xsl:value-of select="$sym-ident" />
+        <xsl:text>_idx</xsl:text>
+        <xsl:value-of select="$symbol-index" />
+        <xsl:text>_attr_</xsl:text>
+        <xsl:value-of select="@identifier" />
+        <xsl:text>_rule</xsl:text>
+        <xsl:value-of select="$rule-no" />
+        <xsl:text>_eval_descr</xsl:text>
+      </xsl:when>
+      <xsl:otherwise><xsl:text>NULL</xsl:text></xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>,&eol;</xsl:text>
+  </xsl:for-each>
+</xsl:template>
+
+
+<!-- Generate attribute evaluator call input arguments -->
+<xsl:template name="generate-attr-evaluator-call-args">
+  <xsl:param name="arity" data-type="number" />
+  <xsl:param name="at"    data-type="number" select="0" />
+  <xsl:if test="$at &lt; $arity">
+    <xsl:text>    assert(NULL != (*rattrs)[</xsl:text>
+    <xsl:value-of select="$at" />
+    <xsl:text>]);&eol;</xsl:text>
+    <xsl:text>    assert(ATTR_EVAL_OK == attr_get_eval_status((*rattrs)[</xsl:text>
+    <xsl:value-of select="$at" />
+    <xsl:text>]));&eol;</xsl:text>
+    <xsl:text>    void *arg</xsl:text>
+    <xsl:value-of select="$at" />
+    <xsl:text> = attr_get_value((*rattrs)[</xsl:text>
+    <xsl:value-of select="$at" />
+    <xsl:text>]);&eol;&eol;</xsl:text>
+    <xsl:call-template name="generate-attr-evaluator-call-args">
+      <xsl:with-param name="arity" select="$arity" />
+      <xsl:with-param name="at"    select="$at + 1" />
+    </xsl:call-template>
+  </xsl:if>
+</xsl:template>
+
+<!-- Generate attribute evaluator call input arguments -->
+<xsl:template name="generate-attr-evaluator-call-params">
+  <xsl:param name="arity" data-type="number" />
+  <xsl:param name="at"    data-type="number" select="0" />
+  <xsl:if test="$at &lt; $arity">
+    <xsl:text>, arg</xsl:text>
+    <xsl:value-of select="$at" />
+    <xsl:call-template name="generate-attr-evaluator-call-params">
+      <xsl:with-param name="arity" select="$arity" />
+      <xsl:with-param name="at"    select="$at + 1" />
+    </xsl:call-template>
+  </xsl:if>
+</xsl:template>
+
+<!-- Generate attribute evaluator call -->
+<xsl:template name="generate-attr-evaluator-call">
+  <xsl:param name="spec"   data-type="string" />
+  <xsl:param name="arity"  data-type="number" />
+  <xsl:param name="status" data-type="string" />
+  <xsl:param name="value"  data-type="string" />
+  <xsl:call-template name="generate-attr-evaluator-call-args">
+    <xsl:with-param name="arity" select="$arity" />
+  </xsl:call-template>
+  <xsl:text>    </xsl:text>
+  <xsl:value-of select="$status" />
+  <xsl:text> = </xsl:text>
+  <xsl:call-template name="function-spec-to-C">
+    <xsl:with-param name="spec"    select="$spec" />
+    <xsl:with-param name="arity"   select="$arity" />
+    <xsl:with-param name="augment" select="'false'" />
+  </xsl:call-template>
+  <xsl:text>(</xsl:text>
+  <xsl:if test="starts-with($spec, 'builtin::')">
+    <xsl:text>lattr, </xsl:text>
+  </xsl:if>
+  <xsl:text>&amp;</xsl:text>
+  <xsl:value-of select="$value" />
+  <xsl:call-template name="generate-attr-evaluator-call-params">
+    <xsl:with-param name="arity" select="$arity" />
+  </xsl:call-template>
+  <xsl:text>);&eol;</xsl:text>
+</xsl:template>
+
+
+<!-- LR(1) parser tables generation -->
+<xsl:template match="lr-parser">/**
+ *  \brief  LR(1) parser tables definitions
+ *
+ *  The code is generated; do NOT change it, manually.
+ *
+ *  This file is part of code generated by CTXFryer
+ *  while producing syntax analyser source code.
+ *
+ *  \date  2012/08/24
+ */
+
+#include "nonterminals.h"
+#include "builtin_attr.h"
+#include "extern_attr.h"
+#include "grammar.h"
+#include "syntax_analyser.h"
+
+#include &lt;assert.h&gt;
+
+
+/*
+ * Actions
+ */
+
+<xsl:for-each select="$shift-actions">
+  <xsl:sort select="@state-id" data-type="number" />
+  <xsl:text>static const sa_action_t </xsl:text>
+  <xsl:call-template name="action-ident">
+    <xsl:with-param name="action" select="." />
+    <xsl:with-param name="pad-length" select="$shift-action-ident-maxlen" />
+  </xsl:call-template>
+  <xsl:text> = </xsl:text>
+  <xsl:call-template name="action-definition">
+    <xsl:with-param name="action" select="." />
+  </xsl:call-template>
+  <xsl:text>;&eol;</xsl:text>
+</xsl:for-each>
+<xsl:text>&eol;</xsl:text>
+<xsl:for-each select="$reduce-actions">
+  <xsl:sort select="@rule-number" data-type="number" />
+  <xsl:text>static const sa_action_t </xsl:text>
+  <xsl:call-template name="action-ident">
+    <xsl:with-param name="action" select="." />
+    <xsl:with-param name="pad-length" select="$reduce-action-ident-maxlen" />
+  </xsl:call-template>
+  <xsl:text> = </xsl:text>
+  <xsl:call-template name="action-definition">
+    <xsl:with-param name="action" select="." />
+  </xsl:call-template>
+  <xsl:text>;&eol;</xsl:text>
+</xsl:for-each>
+<xsl:text>&eol;static const sa_action_t acc = { .type = SA_ACTION_ACCEPT };&eol;</xsl:text>
+
+/** Action table implementation */
+<xsl:text>static const sa_action_t *action_tab_impl[</xsl:text>
+<xsl:value-of select="$state-cnt" />
+<xsl:text> * </xsl:text>
+<xsl:value-of select="$terminal-cnt + 1" />
+<xsl:text>] = {</xsl:text>
+<xsl:for-each select="item-sets/list/list-item">
+  <xsl:text>&eol;</xsl:text>
+  <xsl:variable name="state" select="@index" />
+    <xsl:text>    /* </xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="$state" />
+      <xsl:with-param name="length" select="$state-id-maxlen" />
+      <xsl:with-param name="pad-at" select="'left'" />
+    </xsl:call-template>
+    <xsl:text>:</xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="$eof-ident" />
+      <xsl:with-param name="length" select="$terminal-maxlen" />
+      <xsl:with-param name="pad-at" select="'right'" />
+    </xsl:call-template>
+    <xsl:text> */  </xsl:text>
+    <xsl:call-template name="get-action-ptr">
+      <xsl:with-param name="state"       select="$state" />
+      <xsl:with-param name="terminal-id" select="$eof-id" />
+    </xsl:call-template>
+  <xsl:text>,&eol;</xsl:text>
+  <xsl:for-each select="/lr-parser/grammar/terminals/list/list-item/terminal-symbol">
+    <xsl:sort select="@id" />
+    <xsl:text>    /* </xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="$state" />
+      <xsl:with-param name="length" select="$state-id-maxlen" />
+      <xsl:with-param name="pad-at" select="'left'" />
+    </xsl:call-template>
+    <xsl:text>:</xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="@identifier" />
+      <xsl:with-param name="length" select="$terminal-maxlen" />
+      <xsl:with-param name="pad-at" select="'right'" />
+    </xsl:call-template>
+    <xsl:text> */  </xsl:text>
+    <xsl:call-template name="get-action-ptr">
+      <xsl:with-param name="state"       select="$state" />
+      <xsl:with-param name="terminal-id" select="@id" />
+    </xsl:call-template>
+    <xsl:text>,&eol;</xsl:text>
+  </xsl:for-each>
+</xsl:for-each>
+<xsl:text>};&eol;</xsl:text>
+/* Action table */
+const lr1_action_tab_t action_tab = {
+    .state_cnt    = <xsl:value-of select="$state-cnt" />,
+    .lex_item_cnt = <xsl:value-of select="$terminal-cnt + 1" />,
+    .impl         = &amp;action_tab_impl,
+};
+
+
+/** Goto table implementation */
+<xsl:text>static const size_t goto_tab_impl[</xsl:text>
+<xsl:value-of select="$state-cnt" /> * <xsl:value-of select="$non-terminal-cnt - 1" />
+<xsl:text>] = {</xsl:text>
+<xsl:for-each select="item-sets/list/list-item">
+  <xsl:text>&eol;</xsl:text>
+  <xsl:variable name="state" select="@index" />
+  <xsl:for-each select="/lr-parser/grammar/non-terminals/list/list-item/non-terminal-symbol[not(@id = $root-id)]">
+    <xsl:sort select="@id" />
+    <xsl:variable name="non-terminal-id" select="@id" />
+    <xsl:variable name="entry" select="/lr-parser/goto-table/table/table-entry[@key0 = $state and @key1 = $non-terminal-id]" />
+    <xsl:variable name="next-state">
+      <xsl:choose>
+        <xsl:when test="count($entry) = 1"><xsl:value-of select="$entry" /></xsl:when>
+        <xsl:when test="count($entry) = 0">SA_NULL_TARGET</xsl:when>
+        <xsl:otherwise>#error &dquote;GENERATOR ERROR: Multiple goto table entries&dquote;</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:text>    /* </xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="$state" />
+      <xsl:with-param name="length" select="$state-id-maxlen" />
+      <xsl:with-param name="pad-at" select="'left'" />
+    </xsl:call-template>
+    <xsl:text>:</xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="@identifier" />
+      <xsl:with-param name="length" select="$non-terminal-noroot-maxlen" />
+      <xsl:with-param name="pad-at" select="'right'" />
+    </xsl:call-template>
+    <xsl:text> */  </xsl:text>
+    <xsl:value-of select="$next-state" />
+    <xsl:text>,&eol;</xsl:text>
+  </xsl:for-each>
+</xsl:for-each>
+<xsl:text>};&eol;</xsl:text>
+/* Goto table */
+const lr1_goto_tab_t goto_tab = {
+    .state_cnt    = <xsl:value-of select="$state-cnt" />,
+    .non_term_cnt = <xsl:value-of select="$non-terminal-cnt - 1" />,
+    .impl         = &amp;goto_tab_impl,
+};
+
+
+/*
+ * Attribute evaluators wrappers prototypes
+ */
+
+<xsl:for-each select="grammar/descendant::attribute/evaluators/list/list-item/function">
+  <xsl:variable name="ident" data-type="string" select="@identifier" />
+  <xsl:variable name="arity" data-type="number" select="@arity" />
+  <xsl:if test="not(preceding::function/@identifier = $ident)">
+    <xsl:text>static attr_evaluator_t </xsl:text>
+    <xsl:call-template name="function-spec-to-C">
+      <xsl:with-param name="spec"  select="$ident" />
+      <xsl:with-param name="arity" select="$arity" />
+    </xsl:call-template>
+    <xsl:text>;&eol;</xsl:text>
+  </xsl:if>
+</xsl:for-each>
+<xsl:if test="grammar/descendant::attribute/evaluators/list/list-item/reference">
+  <xsl:text>static attr_evaluator_t </xsl:text>
+  <xsl:call-template name="function-spec-to-C">
+    <xsl:with-param name="spec"  select="'builtin::reference'" />
+    <xsl:with-param name="arity" select="1" />
+  </xsl:call-template>
+  <xsl:text>;&eol;</xsl:text>
+</xsl:if>
+
+/*
+ * Attribute destructors wrappers prototypes
+ */
+
+<xsl:for-each select="grammar/descendant::attribute/destructor/function">
+  <xsl:variable name="ident" data-type="string" select="@identifier" />
+  <xsl:if test="not(preceding::function/@identifier = $ident)">
+    <xsl:text>static attr_destructor_t </xsl:text>
+    <xsl:call-template name="function-spec-to-C">
+      <xsl:with-param name="spec"  select="$ident" />
+      <xsl:with-param name="arity" select="1" />
+    </xsl:call-template>
+    <xsl:text>;&eol;</xsl:text>
+  </xsl:if>
+</xsl:for-each>
+
+/*
+ * Terminal symbols attribute class descriptors
+ */
+
+<xsl:call-template name="generate-attr-class-descriptors">
+  <xsl:with-param name="symbols" select="grammar/terminals/list/list-item/terminal-symbol" />
+</xsl:call-template>
+/**
+ *  \brief  Terminal symbols attribute classes
+ *
+ *  Indexation follows lexical symbols \c LEXI_* definitions
+ *  with the exception that the lexical item values begin
+ *  with 1 (0 being reserved for the EoF pseudo-lexical item).
+ *
+ *  In other words, \c tsyms_attr_classes[LEXI_something \c - \c 1]
+ *  provides terminal symbol \c something attribute classes descriptors.
+ */
+<xsl:call-template name="generate-attribute-classes">
+  <xsl:with-param name="symbols"    select="grammar/terminals/list/list-item/terminal-symbol" />
+  <xsl:with-param name="identifier" select="'tsyms_attr_classes'" />
+</xsl:call-template>
+
+
+/*
+ * Non-terminal symbols attribute class descriptors
+ */
+
+<xsl:call-template name="generate-attr-class-descriptors">
+  <xsl:with-param name="symbols"
+      select="grammar/non-terminals/list/list-item/non-terminal-symbol[@id != $root-id]" />
+</xsl:call-template>
+/**
+ *  \brief  Non-terminal symbols attribute classes
+ *
+ *  Indexation follows non-terminals \c NT_* definitions.
+ *
+ *  In other words, \c ntsyms_attr_classes[NT_SOMETHING]
+ *  provides non-terminal symbol \c SOMETHING attribute classes descriptors.
+ */
+<xsl:call-template name="generate-attribute-classes">
+  <xsl:with-param name="symbols"
+      select="grammar/non-terminals/list/list-item/non-terminal-symbol[@id != $root-id]" />
+  <xsl:with-param name="identifier" select="'ntsyms_attr_classes'" />
+</xsl:call-template>
+
+
+/*
+ * Terminal symbols attribute evaluators
+ */
+
+<xsl:call-template name="generate-attr-eval-descriptors">
+  <xsl:with-param name="symbols" select="grammar/terminals/list/list-item/terminal-symbol" />
+  <xsl:with-param name="rules"   select="grammar/rules/list/list-item/rule" />
+</xsl:call-template>
+
+<xsl:call-template name="generate-explicit-attribute-evaluators">
+  <xsl:with-param name="symbols"    select="grammar/terminals/list/list-item/terminal-symbol" />
+  <xsl:with-param name="identifier" select="'tsyms_attr_eval_descrs'" />
+</xsl:call-template>
+/*
+ * Non-terminal symbols attribute evaluators
+ */
+
+<xsl:call-template name="generate-attr-eval-descriptors">
+  <xsl:with-param name="symbols"
+      select="grammar/non-terminals/list/list-item/non-terminal-symbol[@id != $root-id]" />
+  <xsl:with-param name="rules" select="grammar/rules/list/list-item/rule" />
+</xsl:call-template>
+
+<xsl:call-template name="generate-explicit-attribute-evaluators">
+  <xsl:with-param name="symbols"
+      select="grammar/non-terminals/list/list-item/non-terminal-symbol[@id != $root-id]" />
+  <xsl:with-param name="identifier" select="'ntsyms_attr_eval_descrs'" />
+</xsl:call-template>
+/*
+ * Terminal symbols attribute names resolution FSA
+ */
+
+<xsl:call-template name="generate-attr-names-FSA">
+  <xsl:with-param name="symbols"    select="grammar/terminals/list/list-item/terminal-symbol" />
+  <xsl:with-param name="identifier" select="'tsyms_attr_names_fsa'" />
+  <xsl:with-param name="comment"    select="'Terminals attr. names resolution FSA list'" />
+</xsl:call-template>
+/*
+ * Non-terminal symbols attribute names resolution FSA
+ */
+
+<xsl:call-template name="generate-attr-names-FSA">
+  <xsl:with-param name="symbols"
+      select="grammar/non-terminals/list/list-item/non-terminal-symbol[@id != $root-id]" />
+  <xsl:with-param name="identifier" select="'ntsyms_attr_names_fsa'" />
+  <xsl:with-param name="comment"    select="'Non-terminals attr. names resolution FSA list'" />
+</xsl:call-template>
+
+/** Grammar symbols attribute definitions table */
+const attribute_tab_t attribute_tab = {
+    .tsyms_classes     = &amp;tsyms_attr_classes,
+    .ntsyms_classes    = &amp;ntsyms_attr_classes,
+    .tsyms_expl_evals  = &amp;tsyms_attr_eval_descrs,
+    .ntsyms_expl_evals = &amp;ntsyms_attr_eval_descrs,
+    .tsyms_names_fsa   = &amp;tsyms_attr_names_fsa,
+    .ntsyms_names_fsa  = &amp;ntsyms_attr_names_fsa,
+};
+
+
+/*
+ * Grammar rules-specific references to attr. evaluators
+ */
+
+<xsl:for-each select="grammar/rules/list/list-item/rule">
+  <xsl:variable name="rule" select="." />
+  <xsl:variable name="rule-id"    data-type="string" select="@id" />
+  <xsl:variable name="rule-no"    data-type="number" select="@number" />
+  <xsl:variable name="lhs-ident"  data-type="string" select="left-side" />
+  <xsl:variable name="lhs-symbol"
+      select="/lr-parser/grammar/non-terminals/list/list-item/non-terminal-symbol[@identifier = $lhs-ident]" />
+  <xsl:variable name="lhs-attr-cnt" data-type="number" select="count($lhs-symbol/attribute)" />
+  <xsl:variable name="lhs-eval-cnt" data-type="number"
+      select="count($lhs-symbol/attribute/evaluators/list/list-item/*[@rule-id = $rule-id and @symbol-number = 0])" />
+  <xsl:if test="$lhs-eval-cnt &gt; 0">
+    <xsl:text>/** Grammar rule #</xsl:text>
+    <xsl:value-of select="$rule-no" />
+    <xsl:text> left-hand side symbol (</xsl:text>
+    <xsl:value-of select="$lhs-ident" />
+    <xsl:text>) attrs (</xsl:text>
+    <xsl:value-of select="$lhs-attr-cnt" />
+    <xsl:text>) evaluators */&eol;</xsl:text>
+    <xsl:text>static const attr_eval_descr_refs_t rule</xsl:text>
+    <xsl:value-of select="$rule-no" />
+    <xsl:text>_lhs_attr_evals = {&eol;</xsl:text>
+    <xsl:call-template name="generate-implicit-attribute-evaluators-references">
+      <xsl:with-param name="rule"         select="$rule" />
+      <xsl:with-param name="symbol"       select="$lhs-symbol" />
+      <xsl:with-param name="symbol-index" select="0" />
+    </xsl:call-template>
+    <xsl:text>};&eol;&eol;</xsl:text>
+  </xsl:if>
+  <xsl:for-each select="right-side/list/list-item">
+    <xsl:variable name="rhs-ident" data-type="string" select="." />
+    <xsl:variable name="rhs-symbol"
+        select="/lr-parser/grammar/*/list/list-item/*[@identifier = $rhs-ident]" />
+    <xsl:variable name="rhs-attr-cnt" data-type="number" select="count($rhs-symbol/attribute)" />
+    <xsl:variable name="rhs-index" data-type="number" select="@index" />
+    <xsl:variable name="rhs-eval-cnt" data-type="number"
+        select="count($rhs-symbol/attribute/evaluators/list/list-item/*[@rule-id = $rule-id and @symbol-number = $rhs-index + 1])" />
+    <xsl:if test="$rhs-eval-cnt &gt; 0">
+      <xsl:text>/** Grammar rule #</xsl:text>
+      <xsl:value-of select="$rule-no" />
+      <xsl:text> right-hand side symbol #</xsl:text>
+      <xsl:value-of select="$rhs-index" />
+      <xsl:text> (</xsl:text>
+      <xsl:value-of select="$rhs-ident" />
+      <xsl:text>) attrs (</xsl:text>
+      <xsl:value-of select="$rhs-attr-cnt" />
+      <xsl:text>) evaluators */&eol;</xsl:text>
+      <xsl:text>static const attr_eval_descr_refs_t rule</xsl:text>
+      <xsl:value-of select="$rule-no" />
+      <xsl:text>_rhs</xsl:text>
+      <xsl:value-of select="$rhs-index" />
+      <xsl:text>_attr_evals = {&eol;</xsl:text>
+      <xsl:call-template name="generate-implicit-attribute-evaluators-references">
+        <xsl:with-param name="rule"         select="$rule" />
+        <xsl:with-param name="symbol"       select="$rhs-symbol" />
+        <xsl:with-param name="symbol-index" select="$rhs-index + 1" />
+      </xsl:call-template>
+      <xsl:text>};&eol;&eol;</xsl:text>
+    </xsl:if>
+  </xsl:for-each>
+</xsl:for-each>
+/*
+ * Grammar rules
+ */
+
+<xsl:for-each select="grammar/rules/list/list-item/rule">
+  <xsl:variable name="id"       select="@id" />
+  <xsl:variable name="number"   select="@number" />
+  <xsl:variable name="lhs-sym"  select="left-side" />
+  <xsl:variable name="rhs-syms" select="right-side/list/list-item" />
+  <xsl:text>/** Grammar rule #</xsl:text>
+  <xsl:value-of select="$number" />
+  <xsl:text>: </xsl:text>
+  <xsl:value-of select="$lhs-sym" />
+  <xsl:text> =></xsl:text>
+  <xsl:choose>
+    <xsl:when test="@length &gt; 0">
+      <xsl:for-each select="$rhs-syms">
+        <xsl:text> </xsl:text>
+        <xsl:value-of select="." />
+      </xsl:for-each>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:text> e</xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
+  <xsl:text> */&eol;</xsl:text>
+  <xsl:text>static const grammar_rule_t rule</xsl:text>
+  <xsl:value-of select="$number" />
+  <xsl:text> = {&eol;</xsl:text>
+  <xsl:text>    .number      = </xsl:text>
+  <xsl:value-of select="$number" />
+  <xsl:text>,&eol;</xsl:text>
+  <xsl:text>    .lhs_nt      = NT_</xsl:text>
+  <xsl:value-of select="$lhs-sym" />
+  <xsl:text>,&eol;</xsl:text>
+  <xsl:text>    .rhs_sym_cnt = </xsl:text>
+  <xsl:value-of select="@length" />
+  <xsl:text>,&eol;</xsl:text>
+  <xsl:variable name="rhs-symbol-maxlen">
+    <xsl:call-template name="max-string-length">
+      <xsl:with-param name="nodes" select="$rhs-syms" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="symbol-maxlen" data-type="number">
+    <xsl:call-template name="max">
+      <xsl:with-param name="arg1" select="string-length($lhs-sym)" />
+      <xsl:with-param name="arg2" select="$rhs-symbol-maxlen" />
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:text>    .lhs_attr_evals =&eol;</xsl:text>
+  <xsl:text>        /* </xsl:text>
+  <xsl:call-template name="pad-string">
+    <xsl:with-param name="string" select="$lhs-sym" />
+    <xsl:with-param name="length" select="$symbol-maxlen" />
+  </xsl:call-template>
+  <xsl:text> */  </xsl:text>
+  <xsl:variable name="lhs-symbol"
+      select="/lr-parser/grammar/non-terminals/list/list-item/non-terminal-symbol[@identifier = $lhs-sym]" />
+  <xsl:choose>
+    <!--xsl:when test="count(/lr-parser/grammar/non-terminals/list/list-item/non-terminal-symbol[@identifier = $lhs-sym]/attribute) &gt; 0"-->
+    <xsl:when test="count($lhs-symbol/attribute/evaluators/list/list-item/*[@rule-id = $id and @symbol-number = 0])">
+      <xsl:text>&amp;rule</xsl:text>
+      <xsl:value-of select="$number" />
+      <xsl:text>_lhs_attr_evals</xsl:text>
+    </xsl:when>
+    <xsl:otherwise><xsl:text>NULL</xsl:text></xsl:otherwise>
+  </xsl:choose>
+  <xsl:text>,&eol;    .rhs_attr_evals = {&eol;</xsl:text>
+  <xsl:for-each select="$rhs-syms">
+    <xsl:variable name="rhs-sym" select="." />
+    <xsl:variable name="rhs-sym-index" select="@index" />
+    <xsl:variable name="rhs-symbol"
+        select="/lr-parser/grammar/*/list/list-item/*[@identifier = $rhs-sym]" />
+    <xsl:text>        /* </xsl:text>
+    <xsl:call-template name="pad-string">
+      <xsl:with-param name="string" select="." />
+      <xsl:with-param name="length" select="$symbol-maxlen" />
+    </xsl:call-template>
+    <xsl:text> */  </xsl:text>
+    <xsl:choose>
+      <!--xsl:when test="count(/lr-parser/grammar/*/list/list-item/*[@identifier = $rhs-sym]/attribute) &gt; 0"-->
+      <xsl:when test="count($rhs-symbol/attribute/evaluators/list/list-item/*[@rule-id = $id and @symbol-number = $rhs-sym-index + 1])">
+        <xsl:text>&amp;rule</xsl:text>
+        <xsl:value-of select="$number" />
+        <xsl:text>_rhs</xsl:text>
+        <xsl:value-of select="$rhs-sym-index" />
+        <xsl:text>_attr_evals</xsl:text>
+      </xsl:when>
+      <xsl:otherwise><xsl:text>NULL</xsl:text></xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>,&eol;</xsl:text>
+  </xsl:for-each>
+  <xsl:text>    }&eol;</xsl:text>
+  <xsl:text>};&eol;&eol;</xsl:text>
+</xsl:for-each>
+/** Rule table */
+const lr1_rule_tab_t rule_tab = {
+    .rule_cnt = <xsl:value-of select="$rule-cnt" />,
+    .impl     = {
+<xsl:for-each select="grammar/rules/list/list-item/rule">
+  <xsl:text>        /* </xsl:text>
+  <xsl:call-template name="pad-string">
+    <xsl:with-param name="string" select="@number" />
+    <xsl:with-param name="length" select="$rule-number-maxlen" />
+  </xsl:call-template>
+  <xsl:text> */  &amp;rule</xsl:text>
+  <xsl:value-of select="@number" />
+  <xsl:text>,&eol;</xsl:text>
+</xsl:for-each>
+<xsl:text>    }</xsl:text>
+};
+
+
+/*
+ * Attribute evaluators wrappers
+ */
+
+<xsl:for-each select="grammar/descendant::attribute/evaluators/list/list-item/function">
+  <xsl:variable name="ident" data-type="string" select="@identifier" />
+  <xsl:variable name="arity" data-type="number" select="@arity" />
+  <xsl:if test="not(preceding::function/@identifier = $ident)">
+    <xsl:text>/** </xsl:text>
+    <xsl:value-of select="$ident" />
+    <xsl:text> attribute evaluator wrapper */&eol;</xsl:text>
+    <xsl:text>static attr_eval_status_t </xsl:text>
+    <xsl:call-template name="function-spec-to-C">
+      <xsl:with-param name="spec"  select="$ident" />
+      <xsl:with-param name="arity" select="$arity" />
+    </xsl:call-template>
+    <xsl:text>(&eol;</xsl:text>
+    <xsl:text>    attr_handle_t      *lattr,&eol;</xsl:text>
+    <xsl:text>    attr_handle_refs_t *rattrs)&eol;</xsl:text>
+    <xsl:text>{&eol;</xsl:text>
+    <xsl:text>    assert(NULL != lattr);&eol;</xsl:text>
+    <xsl:if test="$arity &gt; 0">
+      <xsl:text>    assert(NULL != rattrs);&eol;</xsl:text>
+    </xsl:if>
+    <xsl:text>&eol;</xsl:text>
+    <xsl:text>    attr_eval_status_t status = ATTR_EVAL_ERROR;&eol;&eol;</xsl:text>
+    <xsl:text>    void *val;&eol;&eol;</xsl:text>
+    <xsl:call-template name="generate-attr-evaluator-call">
+      <xsl:with-param name="spec"   select="$ident" />
+      <xsl:with-param name="arity"  select="$arity" />
+      <xsl:with-param name="status" select="'status'" />
+      <xsl:with-param name="value"  select="'val'" />
+    </xsl:call-template>
+    attr_set_eval_status(lattr, status);
+
+    if (ATTR_EVAL_OK == status)
+        attr_set_value(lattr, val);
+
+    return status;<xsl:text>&eol;}&eol;&eol;&eol;</xsl:text>
+  </xsl:if>
+</xsl:for-each>
+<xsl:if test="grammar/descendant::attribute/evaluators/list/list-item/reference">
+  <xsl:text>/** Reference attribute evaluator */&eol;</xsl:text>
+  <xsl:text>static attr_eval_status_t </xsl:text>
+  <xsl:call-template name="function-spec-to-C">
+    <xsl:with-param name="spec"  select="'builtin::reference'" />
+    <xsl:with-param name="arity" select="1" />
+  </xsl:call-template>
+  <xsl:text>(&eol;</xsl:text>
+  <xsl:text>    attr_handle_t      *lattr,&eol;</xsl:text>
+  <xsl:text>    attr_handle_refs_t *rattrs)&eol;</xsl:text>
+  <xsl:text>{</xsl:text>
+    assert(NULL != lattr);
+    assert(NULL != rattrs);
+    assert(NULL != (*rattrs)[0]);
+
+    assert(ATTR_EVAL_OK == attr_get_eval_status((*rattrs)[0]));
+
+    attr_set_value(lattr, attr_get_value((*rattrs)[0]));
+
+    attr_set_reference_flag(lattr);
+
+    attr_set_eval_status(lattr, ATTR_EVAL_OK);
+
+    return ATTR_EVAL_OK;<xsl:text>&eol;}&eol;&eol;&eol;</xsl:text>
+</xsl:if>/*
+ * Attribute destructors wrappers
+ */
+
+<xsl:for-each select="grammar/descendant::attribute/destructor/function">
+  <xsl:variable name="ident" data-type="string" select="@identifier" />
+  <xsl:if test="not(preceding::function/@identifier = $ident)">
+    <xsl:text>/** </xsl:text>
+    <xsl:value-of select="$ident" />
+    <xsl:text> attribute destructor wrapper */&eol;</xsl:text>
+    <xsl:text>static void </xsl:text>
+    <xsl:call-template name="function-spec-to-C">
+      <xsl:with-param name="spec"  select="$ident" />
+      <xsl:with-param name="arity" select="1" />
+    </xsl:call-template>
+    <xsl:text>(attr_handle_t *attr) {&eol;</xsl:text>
+    <xsl:text>    assert(NULL != attr);&eol;&eol;</xsl:text>
+    <xsl:text>    if (ATTR_EVAL_OK == attr_get_eval_status(attr))&eol;</xsl:text>
+    <xsl:text>        </xsl:text>
+    <xsl:call-template name="function-spec-to-C">
+      <xsl:with-param name="spec"    select="$ident" />
+      <xsl:with-param name="arity"   select="1" />
+      <xsl:with-param name="augment" select="'false'" />
+    </xsl:call-template>
+    <xsl:text>(attr_get_value(attr));&eol;</xsl:text>
+    <xsl:text>}&eol;&eol;&eol;</xsl:text>
+  </xsl:if>
+</xsl:for-each>
+</xsl:template>
+
+</xsl:stylesheet>

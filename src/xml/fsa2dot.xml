@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY dquote "&#34;">
+<!ENTITY quote "&#39;">
+<!ENTITY dots "&#133;">
+]>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:ctx-fryer="http://127.0.0.1/project"
+                version="1.0">
+
+<xsl:output method="text" encoding="utf-8" />
+<xsl:strip-space elements="*" />
+
+<!-- Remove left-padding zeros from hexadezimal number -->
+<xsl:template name="short-hex-number">
+  <xsl:param name="number" />
+  <xsl:choose>
+    <xsl:when test="starts-with($number, '0x0')">
+      <xsl:call-template name="short-hex-number">
+        <xsl:with-param name="number" select="concat('0x', substring($number, 4))" />
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+        <xsl:value-of select="$number" />
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- Assemble state label -->
+<xsl:template name="state-label">
+  <xsl:param name="state" />
+  <!--xsl:call-template name="short-hex-number"><xsl:with-param name="number" select="$state/@id" /></xsl:call-template-->
+  <!--xsl:if test="$state/accepts">:<xsl:for-each select="$state/accepts">\n<xsl:value-of select="." /></xsl:for-each></xsl:if-->
+  <xsl:for-each select="$state/accepts"><xsl:value-of select="." /><xsl:if test="not(position() = last())">\n</xsl:if></xsl:for-each>
+</xsl:template>
+
+
+<xsl:template match="fsa">// FSA <xsl:value-of select="@id" />: <xsl:value-of select="normalize-space(description)" />
+strict digraph "<xsl:value-of select="@id" />" {
+    layout  = dot;
+    rankdir = LR;
+
+    node [
+        shape = ellipse
+        style = solid
+    ];
+
+    edge [
+        arrowhead = open
+    ];
+
+<xsl:for-each select="fsa-state">    "<xsl:value-of select="@id" />" [
+        // <xsl:value-of select="normalize-space(translate(description, '&dquote;', &dquote;&quote;&dquote;))" />
+        label = "<xsl:call-template name="state-label"><xsl:with-param name="state" select="." /></xsl:call-template>"
+<!--xsl:if test="accepts">        style = bold</xsl:if-->
+    ];
+
+</xsl:for-each>
+
+<xsl:for-each select="fsa-state/fsa-branch">    "<xsl:value-of select="../@id" />" -> "<xsl:value-of select="@target-id" />" [
+        label = "<xsl:for-each select="symbol-set/symbol-interval">
+            <xsl:value-of select="lower-bound/symbol-ascii/@char" />
+            <xsl:if test="@length > 1">..<xsl:value-of select="higher-bound/symbol-ascii/@char" /></xsl:if>
+            </xsl:for-each>"
+    ];
+
+</xsl:for-each>
+}
+</xsl:template>
+
+</xsl:stylesheet>

@@ -39,7 +39,7 @@ run_test_impl () {
 
     echo "Running test \"$id\": $cmd"
 
-    exec "$cmd"
+    eval "$cmd"
 
     cmd_exit_code=$?
 

@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use CTXFryer::ProjectDef;
+
+use CTXFryer::Logging qw(:all);
+
+# Default log level
+$CTXFryer::Logging::threshold = "INFO";
+
+my $project_def = new CTXFryer::ProjectDef($ARGV[0]) || exit(1);
+my $terminals   = $project_def->terminalSymbols()    || exit(0);
+
+my %terminals = $terminals->map();
+
+while (my ($ident, $regex) = each %terminals) {
+    print $ident, " = ", $regex, "\n";
+}

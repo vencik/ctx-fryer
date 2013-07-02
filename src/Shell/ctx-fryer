@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# Usage
+usage() {
+    cat >&2 <<HERE
+Usage: `basename $0` <command> [<command-specific options>]
+
+Commands available:
+    create-project | cpro <def_file> [<dir>]   Creates project
+    build-project  | bpro <def_file> [<dir>]   Creates project and builds it
+
+See the project documentation for more info.
+
+HERE
+}
+
+
+# My path
+ctx_fryer__path=`which "$0" | xargs dirname`
+
+# Execute command
+cmd="$1"
+
+if test -z "$cmd"; then
+    usage
+    exit 1
+fi
+
+shift;
+
+case "$cmd" in
+    "create-project"|"cpro")
+        . "$ctx_fryer__path/ctx-fryer-project.sh"
+
+        ctx_fryer__create_project $*
+        ;;
+
+    "build-project"|"bpro")
+        . "$ctx_fryer__path/ctx-fryer-project.sh"
+
+        ctx_fryer__build_project $*
+        ;;
+
+    *)
+        echo "Unknown command: \"$cmd\"" >&2
+        usage
+        exit 2
+esac

@@ -1,112 +1,70 @@
-# Common base
-. command.sh
-. paths.sh
-. logging.sh
-
-# Default log level
-log_level=$LOG_LEVEL_INFO
-
-# Project ID postfix
-project_id_postfix=".CTXFryer.`date +%Y%m%d%H%M%S`"
-
-
-# Basename
-this=`basename $0`
-
-
-# Usage
-usage() {
-    cat <<HERE
-Usage: `$this` <project definition file>
-
-HERE
-
-    exit 1
-}
-
-
-# Modus
-make_project=no
-test "$this" = "make_project.sh" && make_project=yes
-
-
-# Project definition file, path and ID
-project_file=$1
-
-test -n "$project_file" || usage
-test -f "$project_file" || FATAL "$project_file isn't a file"
-
-project_id=`basename "$project_file"`
-project_id="$project_id$project_id_postfix"
-
-project_path=`dirname $project_file`
-if test -z "$project_path"; then
-    project_path=`pwd`
-    project_file="$project_path/$project_file"
-elif test "$project_path" = '.'; then
-    project_path=`pwd`
-    project_file="$project_path/$project_file"
-elif expr substr "$project_path" 1 1 != '/' >/dev/null; then
-    project_path="`pwd`/$project_path"
-    project_file="$project_path/$project_file"
-fi
-
-DEBUG "Project ID:   $project_id"
-DEBUG "Project path: $project_path"
-DEBUG "Project file: $project_file"
+# We shall log
+. "$ctx_fryer__path/ctx-fryer-logging.sh"
 
 # Create project
-INFO "Creating project $project_id"
+ctx_fryer__create_project () {
+    # Project definition file
+    project_file="$1"
 
-project_home="$project_path/$project_id"
-mkdir "$project_home" || FATAL "Failed to create project home directory $project_home"
+    test -n "$project_file" || FATAL "Project definition file not specified"
+    test -n "$project_file" || FATAL "$project_file doesn't exist"
+    test -f "$project_file" || FATAL "$project_file isn't a file"
 
-project_file_link="$project_home/def_file"
-ln -s "$project_file" "$project_file_link" || FATAL "Failed to create project file link"
+    # Project directory
+    project_dir="$2"
+    test -n "$project_dir" || project_dir="./$project_id.`date +%Y%m%d%H%M%S`"
 
-tlangs=""
-tlangs_test=""
-tlangs_clean=""
-tlangs_purge=""
+    echo_project_dir="no"
+    test "$3" = "echo_project_dir" && echo_project_dir="yes"
 
-tlangs_def=`grammar2tlang.pl "$project_file_link"` \
-|| FATAL "Failed to resolve target languages of project"
+    # Project ID
+    project_id=`basename "$project_file"`
+    project_id=`echo "$project_id" | sed -e 's/\.grammar$//'`
 
-for tlang in $tlangs_def; do
-    tlang_dir_tpl="$tlang_prefix/$tlang/project"
+    DEBUG "Project ID:   $project_id"
+    DEBUG "Project file: $project_file"
+    DEBUG "Project dir:  $project_dir"
 
-    if test -d "$tlang_dir_tpl"; then
-        tlang_dir="$project_home/$tlang"
+    # Create project
+    INFO "Creating project $project_id"
 
-        DEBUG "Creating target language $tlang directory"
-        cp -r "$tlang_dir_tpl" "$tlang_dir" \
-        || FATAL "Failed to create target language directory $tlang_dir"
+    mkdir -p "$project_dir" || FATAL "Failed to create project directory $project_dir"
 
-        tlangs="$tlang $tlangs"
-        tlangs_test="${tlang}-test $tlangs_test"
-        tlangs_clean="${tlang}-clean $tlangs_clean"
-        tlangs_purge="${tlang}-purge $tlangs_purge"
-    else
-        WARN "Sorry, target language $lang isn't supported"
-    fi
-done
+    cp -s "$project_file" "$project_dir/def_file" || FATAL "Failed to copy project file"
+    project_file="$project_dir/def_file"
 
-project_doc="$project_home/doc"
-mkdir "$project_doc" || FATAL "Failed to create project doc directory $project_doc"
+    tlangs=""
+    tlangs_test=""
+    tlangs_clean=""
+    tlangs_purge=""
 
-# Create paths make file
-cat > "$project_home/Makefile.paths" <<HERE
-sh_bin       = $sh_bin
-perl_bin     = $perl_bin
-perl_lib     = $perl_lib
-xml_lib      = $xml_lib
-tlang_prefix = $tlang_prefix
-HERE
+    tlangs_def=`ctx-fryer-cfg2tlang "$project_file"` \
+    || FATAL "Failed to resolve target languages of project"
 
-# Create main make file
-cat > "$project_home/Makefile" <<HERE
-include Makefile.paths
+    for tlang in $tlangs_def; do
+        tlang_dir_tpl="$tlang_prefix/$tlang/project"
 
+        if test -d "$tlang_dir_tpl"; then
+            tlang_dir="$project_dir/$tlang"
+
+            DEBUG "Creating target language $tlang directory"
+            cp -r "$tlang_dir_tpl" "$tlang_dir" \
+            || FATAL "Failed to create target language directory $tlang_dir"
+
+            tlangs="$tlang $tlangs"
+            tlangs_test="${tlang}-test $tlangs_test"
+            tlangs_clean="${tlang}-clean $tlangs_clean"
+            tlangs_purge="${tlang}-purge $tlangs_purge"
+        else
+            WARN "Sorry, target language $lang isn't supported"
+        fi
+    done
+
+    project_doc="$project_dir/doc"
+    mkdir "$project_doc" || FATAL "Failed to create project doc directory $project_doc"
+
+    # Create main make file
+    cat > "$project_dir/Makefile" <<HERE
 cd   = cd
 make = make
 rm   = rm -f
@@ -114,20 +72,20 @@ rm   = rm -f
 # Add --log-position for logging of message position in the code
 log_options = --log-level INFO --log-process
 
-grammar2regex    = PERL5LIB=\${PERL5LIB}:\$(perl_lib) \$(perl_bin)/grammar2regex.pl
-grammar2tlang    = PERL5LIB=\${PERL5LIB}:\$(perl_lib) \$(perl_bin)/grammar2tlang.pl
-regex2fsa        = PERL5LIB=\${PERL5LIB}:\$(perl_lib) \$(perl_bin)/regex2fsa.pl \$(log_options)
-grammar2lrparser = PERL5LIB=\${PERL5LIB}:\$(perl_lib) \$(perl_bin)/grammar2lrparser.pl \$(log_options)
+grammar2regex    = ctx-fryer-cfg2re
+grammar2tlang    = ctx-fryer-cfg2tlang
+regex2fsa        = ctx-fryer-re2fsa \$(log_options)
+grammar2lrparser = ctx-fryer-cfg2parser \$(log_options)
 
 
 .PHONY: all doc $tlangs
 
 all: code documentation report
 
-terminal_symbols_fsa.xml: $project_file_link
+terminal_symbols_fsa.xml: def_file
 	\$(grammar2regex) < \$< | \$(regex2fsa) --output \$@
 
-lr_parser.xml: $project_file_link
+lr_parser.xml: def_file
 	\$(grammar2lrparser) --input "\$<" --output \$@
 
 code: terminal_symbols_fsa.xml lr_parser.xml tlangs
@@ -141,21 +99,21 @@ test: code $tlangs_test
 
 $tlangs_test:
 	for d in $tlangs; do \
-	    \$(MAKE) --directory=\$\$d test; \
+	    \$(MAKE) --directory=\$\$d test || break; \
 	done
 
 tlangs_clean: $tlangs_clean
 
 $tlangs_clean:
 	for d in $tlangs; do \
-	    \$(MAKE) --directory=\$\$d clean; \
+	    \$(MAKE) --directory=\$\$d clean || break; \
 	done
 
 tlangs_purge: $tlangs_purge
 
 $tlangs_purge:
 	for d in $tlangs; do \
-	    \$(MAKE) --directory=\$\$d purge; \
+	    \$(MAKE) --directory=\$\$d purge || break; \
 	done
 
 documentation: terminal_symbols_fsa.xml lr_parser.xml
@@ -201,10 +159,8 @@ report:
 	@echo
 HERE
 
-# Create documentation make file
-cat > "$project_doc/Makefile" <<HERE
-include ../Makefile.paths
-
+    # Create documentation make file
+    cat > "$project_doc/Makefile" <<HERE
 rm = rm -f
 
 tex2pdf      = latex -interaction nonstopmode -output-format pdf
@@ -279,16 +235,20 @@ purge: clean
 	\$(rm) lr_parser.ps
 HERE
 
-# Project creation done
-INFO "Project created in sandbox"
-INFO "$project_home"
-
-if test "$make_project" = "yes"; then
-    ( cd "$project_home"; make all test )
-    test $? -eq 0 || FATAL "Project make failed; please report the bug"
-
-    INFO "Project make completed in sandbox"
-    INFO "$project_home"
-else
+    # Project creation done
+    INFO "Project created in $project_dir"
     INFO "You may now proceed by changing to the directory and running make"
-fi
+
+    test "$echo_project_dir" = "yes" && echo "$project_dir"
+}
+
+
+# Build project
+ctx_fryer__build_project () {
+    project_dir=`ctx_fryer__create_project $* "echo_project_dir"`
+
+    ( cd "$project_dir"; make all test )
+    test $? -eq 0 || FATAL "Project build failed; please report the bug"
+
+    INFO "Project buid completed in $project_dir"
+}

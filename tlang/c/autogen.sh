@@ -19,38 +19,38 @@ by executing the usual ./configure && make && make install triplet.
 "
 
 
-# Does terminal have colors support?
-colors=`tput colors 2>/dev/null || echo 0`
+# Does terminal have colours support?
+colours=`tput colours 2>/dev/null || echo 0`
 
 
 log () {
     level=$1; shift
 
-    color=""
+    colour=""
     prologue=""
     epilogue=""
 
-    if test $colors -gt 0; then
+    if test $colours -gt 0; then
         case "$level" in
             ERROR)
-                color=31  # red
+                colour=31  # red
                 ;;
             WARN)
-                color=33  # yellow
+                colour=33  # yellow
                 ;;
             EMPH)
-                color=37  # white
+                colour=37  # white
                 ;;
             SUCCESS)
-                color=32  # green
+                colour=32  # green
                 ;;
             DEBUG)
-                color=30  # dark grey
+                colour=30  # dark grey
                 ;;
         esac
 
-        if test -n "$color"; then
-            prologue="\033[01;${color}m"
+        if test -n "$colour"; then
+            prologue="\033[01;${colour}m"
             epilogue="\033[00m"
         fi
     fi

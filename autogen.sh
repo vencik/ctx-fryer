@@ -20,7 +20,7 @@ by executing the usual ./configure && make && make install triplet.
 
 
 # Does terminal have colours support?
-colours=`tput colours 2>/dev/null || echo 0`
+colours=`tput colors 2>/dev/null || echo 0`
 
 
 log () {
@@ -114,7 +114,7 @@ run_autoheader () {
 
 run_automake () {
     log EMPH "Running automake to generate Makefile.in templates for configure script..."
-    automake --add-missing || quit 5 "automake failed"
+    automake --add-missing --copy || quit 5 "automake failed"
 }
 
 run_autoconf () {
@@ -123,9 +123,19 @@ run_autoconf () {
 }
 
 
-run_libtoolize
+run_autogen_in () {
+    log EMPH "Running $1/autogen.sh..."
+    ( cd "$1"; ./autogen.sh ) || quit 7 "$1/autogen.sh failed"
+    log EMPH "$1/autogen.sh done"
+}
+
+
+# Create C language real-time libs configure script & .in files
+run_autogen_in "tlang/C"
+
+#run_libtoolize
 run_aclocal
-run_autoheader
+#run_autoheader
 run_automake
 run_autoconf
 

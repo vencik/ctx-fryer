@@ -1,0 +1,13 @@
+AUTOMAKE_OPTIONS = foreign
+ACLOCAL_AMFLAGS  = -I m4
+
+
+SUBDIRS =
+
+if ENABLE_GENERATOR
+SUBDIRS += src
+endif
+
+if ENABLE_RT_SUPPORT
+SUBDIRS += tlang
+endif

@@ -7,6 +7,7 @@ use ExtUtils::MakeMaker;
 
 
 WriteMakefile(
-    NAME         => 'CTXFryer',
-    VERSION_FROM => 'lib/CTXFryer.pm'
+    NAME         => "CTXFryer",
+    VERSION_FROM => "lib/CTXFryer.pm",
+    EXE_FILES    => [ glob("ctx-fryer-*") ]
 );

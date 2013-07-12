@@ -1,16 +1,29 @@
-# CTX Fryer C language run-time library configuration
+# CTX Fryer C language project configuration
 
 AC_PREREQ([2.68])
-AC_INIT([ctx-fryer-c-rt], [0.1.0], [ctx-fryer@lopucha.net])
+AC_INIT([libparser], [0.1.0], [ctx-fryer@lopucha.net])
 AM_INIT_AUTOMAKE
 LT_INIT
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SRCDIR([src/syntax_analyser.c])
-AC_CONFIG_HEADERS([include/config.h])
+AC_CONFIG_SRCDIR([parser.c])
+AC_CONFIG_HEADERS([config.h])
 AC_PREFIX_DEFAULT([/usr/local])
 
 
 # Resolve arguments
+
+# Set additional include path
+AC_MSG_CHECKING([for additional include paths])
+AC_ARG_WITH([include],
+    AS_HELP_STRING([--with-include], [Set additional include paths (':' separated list)]),
+    [   # --with-include specified
+        includes=`echo "${withval}" | sed -e 's/:/ -I/g'`
+        CFLAGS="${CFLAGS} ${includes}"
+        AC_MSG_RESULT([${includes}])
+    ],
+    [   # --with-optim-level not specified
+        AC_MSG_RESULT([none])
+    ])
 
 # Enable debug-only code
 AC_MSG_CHECKING([whether to enable debug code])
@@ -83,30 +96,25 @@ AC_ARG_ENABLE([strip],
 
 
 # Checks for programs.
+AC_CHECK_PROG([XSLTPROC], [xsltproc], [/usr/bin/xsltproc])
 AC_PROG_CC
 
 # Checks for libraries.
 #AC_CHECK_LIB([lname], [lfunc])
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h limits.h stddef.h stdint.h stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
 AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
-AC_TYPE_UINT32_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_FUNC_MMAP
-AC_FUNC_REALLOC
-AC_CHECK_FUNCS([memset munmap strdup strerror])
+AC_CHECK_FUNCS([strerror])
 
 AC_CONFIG_FILES([
     Makefile
-    include/Makefile
-    src/Makefile
-    unit_test/Makefile
 ])
 AC_OUTPUT

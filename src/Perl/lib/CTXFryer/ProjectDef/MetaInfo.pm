@@ -109,7 +109,7 @@ sub parse($$$) {
 
     # Accumulate target language(s)
     elsif (TLANGS_SCOPE == $scope) {
-        push(@{$this->{tlangs}}, map(lc, grep($_, split(/\s+/, $line))));
+        push(@{$this->{tlangs}}, grep($_, split(/\s+/, $line)));
     }
 
     # Parse error

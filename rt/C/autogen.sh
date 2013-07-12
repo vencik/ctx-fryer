@@ -99,7 +99,7 @@ which libtoolize aclocal automake autoheader autoconf >/dev/null \
 # Configure build system
 run_libtoolize () {
     log EMPH "Running libtoolize to prepare libtool usage..."
-    libtoolize || quit 2 "libtoolize failed"
+    libtoolize --copy || quit 2 "libtoolize failed"
 }
 
 run_aclocal () {

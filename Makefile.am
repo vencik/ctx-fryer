@@ -2,12 +2,12 @@ AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS  = -I m4
 
 
-SUBDIRS =
+SUBDIRS = 
 
 if ENABLE_GENERATOR
-SUBDIRS += src
+SUBDIRS += src tlang examples
 endif
 
 if ENABLE_RT_SUPPORT
-SUBDIRS += tlang
+SUBDIRS += rt
 endif

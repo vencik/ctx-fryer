@@ -1,0 +1,5 @@
+# Installation paths
+prefix="@prefix@"
+pkgdatadir="@datarootdir@/@PACKAGE_NAME@"
+xml_lib="${pkgdatadir}/XML"
+tlang_lib="${pkgdatadir}/tlang"

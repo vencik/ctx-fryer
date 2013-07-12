@@ -1,0 +1,19 @@
+# Generate missing source files
+prefix     = @prefix@
+pkgdatadir = @datarootdir@/@PACKAGE_NAME@
+xml_lib    = $(pkgdatadir)/XML
+
+lexical_items.h: ../lr_parser.xml
+	$(XSLTPROC) $(xml_lib)/fsa2h.xml $< > $@
+
+fsa_table.c: ../terminal_symbols_fsa.xml
+	$(XSLTPROC) $(xml_lib)/fsa2c.xml $< > $@
+
+nonterminals.h: ../lr_parser.xml
+	$(XSLTPROC) $(xml_lib)/lrparser2h.xml $< > $@
+
+extern_attr.h: ../lr_parser.xml
+	$(XSLTPROC) $(xml_lib)/lrparser2extern_attr_h.xml $< > $@
+
+parser_tables.c: ../lr_parser.xml
+	$(XSLTPROC) $(xml_lib)/lrparser2c.xml $< > $@

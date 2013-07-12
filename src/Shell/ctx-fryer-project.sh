@@ -1,4 +1,5 @@
 # We shall log
+. "$ctx_fryer__path/ctx-fryer-paths.sh"
 . "$ctx_fryer__path/ctx-fryer-logging.sh"
 
 # Create project
@@ -10,16 +11,16 @@ ctx_fryer__create_project () {
     test -n "$project_file" || FATAL "$project_file doesn't exist"
     test -f "$project_file" || FATAL "$project_file isn't a file"
 
+    # Project ID
+    project_id=`basename "$project_file"`
+    project_id=`echo "$project_id" | sed -e 's/\.grammar$//'`
+
     # Project directory
     project_dir="$2"
     test -n "$project_dir" || project_dir="./$project_id.`date +%Y%m%d%H%M%S`"
 
     echo_project_dir="no"
     test "$3" = "echo_project_dir" && echo_project_dir="yes"
-
-    # Project ID
-    project_id=`basename "$project_file"`
-    project_id=`echo "$project_id" | sed -e 's/\.grammar$//'`
 
     DEBUG "Project ID:   $project_id"
     DEBUG "Project file: $project_file"
@@ -37,12 +38,13 @@ ctx_fryer__create_project () {
     tlangs_test=""
     tlangs_clean=""
     tlangs_purge=""
+    tlangs_hint=1
 
     tlangs_def=`ctx-fryer-cfg2tlang "$project_file"` \
     || FATAL "Failed to resolve target languages of project"
 
     for tlang in $tlangs_def; do
-        tlang_dir_tpl="$tlang_prefix/$tlang/project"
+        tlang_dir_tpl="$tlang_lib/$tlang"
 
         if test -d "$tlang_dir_tpl"; then
             tlang_dir="$project_dir/$tlang"
@@ -56,7 +58,16 @@ ctx_fryer__create_project () {
             tlangs_clean="${tlang}-clean $tlangs_clean"
             tlangs_purge="${tlang}-purge $tlangs_purge"
         else
-            WARN "Sorry, target language $lang isn't supported"
+            WARN "Sorry, target language $tlang isn't supported (yet)"
+
+            if test $tlangs_hint -gt 0; then
+                WARN "It could be, though; perhaps you'd like to add the support?"
+                WARN "All that's needed is to write XSLT transform of the parser"
+                WARN "XML description to $tlang data structures and implement"
+                WARN "the run-time support (i.e. the push-down automaton operating"
+                WARN "over the parser tables)"
+                WARN "See the development documentation if you're interested"
+            fi
         fi
     done
 
@@ -69,8 +80,9 @@ cd   = cd
 make = make
 rm   = rm -f
 
-# Add --log-position for logging of message position in the code
-log_options = --log-level INFO --log-process
+# Add --log-process  for logging process name and PID
+# Add --log-position for logging message position in the code
+log_options = --log-level INFO
 
 grammar2regex    = ctx-fryer-cfg2re
 grammar2tlang    = ctx-fryer-cfg2tlang
@@ -90,28 +102,38 @@ lr_parser.xml: def_file
 
 code: terminal_symbols_fsa.xml lr_parser.xml tlangs
 
-tlangs: $tlangs
+tlangs: tlangs_prepare tlangs_configure $tlangs
+
+tlangs_prepare:
+	for d in $tlangs; do \
+	    if test -f \$\$d/prepare.sh; then \
+	        ( cd \$\$d; sh ./prepare.sh ) || break; \
+	    fi \
+	done
+
+tlangs_configure:
+	for d in $tlangs; do \
+	    if test -x \$\$d/configure; then \
+	        ( cd \$\$d; ./configure ) || break; \
+	    fi \
+	done
 
 $tlangs:
 	\$(MAKE) --directory=\$@
 
-test: code $tlangs_test
+test: code tlangs_test
 
-$tlangs_test:
+tlangs_test:
 	for d in $tlangs; do \
 	    \$(MAKE) --directory=\$\$d test || break; \
 	done
 
-tlangs_clean: $tlangs_clean
-
-$tlangs_clean:
+tlangs_clean:
 	for d in $tlangs; do \
 	    \$(MAKE) --directory=\$\$d clean || break; \
 	done
 
-tlangs_purge: $tlangs_purge
-
-$tlangs_purge:
+tlangs_purge:
 	for d in $tlangs; do \
 	    \$(MAKE) --directory=\$\$d purge || break; \
 	done
@@ -167,12 +189,12 @@ tex2pdf      = latex -interaction nonstopmode -output-format pdf
 tex2ps       = latex -interaction nonstopmode
 dvi2ps       = dvips
 dot2eps      = dot -Teps
-fsa2dot      = xsltproc \$(xml_lib)/fsa2dot.xml
-trans2dot    = xsltproc \$(xml_lib)/lrparser_trans2dot.xml
-reads2dot    = xsltproc \$(xml_lib)/lrparser_reads2dot.xml
-includes2dot = xsltproc \$(xml_lib)/lrparser_includes2dot.xml
-lookback2dot = xsltproc \$(xml_lib)/lrparser_lookback2dot.xml
-lrparser2tex = xsltproc \$(xml_lib)/lrparser2latex.xml
+fsa2dot      = xsltproc ${xml_lib}/fsa2dot.xml
+trans2dot    = xsltproc ${xml_lib}/lrparser_trans2dot.xml
+reads2dot    = xsltproc ${xml_lib}/lrparser_reads2dot.xml
+includes2dot = xsltproc ${xml_lib}/lrparser_includes2dot.xml
+lookback2dot = xsltproc ${xml_lib}/lrparser_lookback2dot.xml
+lrparser2tex = xsltproc ${xml_lib}/lrparser2latex.xml
 
 .PHONY: all lr_parser.ps
 

@@ -99,7 +99,7 @@ which libtoolize aclocal automake autoheader autoconf >/dev/null \
 # Configure build system
 run_libtoolize () {
     log EMPH "Running libtoolize to prepare libtool usage..."
-    libtoolize || quit 2 "libtoolize failed"
+    libtoolize --copy || quit 2 "libtoolize failed"
 }
 
 run_aclocal () {
@@ -131,7 +131,7 @@ run_autogen_in () {
 
 
 # Create C language real-time libs configure script & .in files
-run_autogen_in "tlang/C"
+run_autogen_in "rt/C"
 
 #run_libtoolize
 run_aclocal

@@ -174,13 +174,14 @@ AC_PROG_CXX
 #AC_CHECK_FUNCS([])
 
 
-# Run configure in tlang directories
+# Run configure in run-time support directories
 if test x$enable_rt_support = xtrue; then
     # C language run-time support libraries
     if test x$enable_C_rt_support = xtrue; then
         AC_MSG_NOTICE([running configure in C language run-time support directory])
-        ( cd tlang/C; ./configure --prefix "${prefix}" ) || \
+        ( cd rt/C; ./configure --prefix "${prefix}" ) || \
             AC_MSG_ERROR([failed to configure in C language run-time support directory])
+        AC_MSG_NOTICE([configure in C language run-time support directory done])
     fi
 fi
 
@@ -192,13 +193,18 @@ if test x$enable_generator = xtrue; then
     AC_MSG_NOTICE([creating the generator prototype Makefile using Perl MakeMaker])
     ( cd src/Perl; perl Makefile.PL PREFIX="${prefix}" ) || \
         AC_MSG_ERROR([failed to create the generator prototype Makefile])
+    AC_MSG_NOTICE([generator prototype Makefile created])
 fi
 
 AC_CONFIG_FILES([
     Makefile
+    examples/Makefile
     src/Makefile
     src/Shell/Makefile
+    src/Shell/ctx-fryer-paths.sh
     src/XML/Makefile
+    rt/Makefile
     tlang/Makefile
+    tlang/C/Makefile.xslt
 ])
 AC_OUTPUT

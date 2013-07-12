@@ -1,0 +1,5 @@
+SUBDIRS =
+
+if ENABLE_C_RT_SUPPORT
+SUBDIRS += C
+endif

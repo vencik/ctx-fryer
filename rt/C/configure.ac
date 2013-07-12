@@ -1,12 +1,12 @@
-# CTX Fryer C language project configuration
+# CTX Fryer C language run-time library configuration
 
 AC_PREREQ([2.68])
-AC_INIT([ctx-fryer-c-parser], [0.1.0], [ctx-fryer@lopucha.net])
+AC_INIT([ctx-fryer-C-rt], [0.1.0], [ctx-fryer@lopucha.net])
 AM_INIT_AUTOMAKE
 LT_INIT
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SRCDIR([parser.c])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_SRCDIR([src/syntax_analyser.c])
+AC_CONFIG_HEADERS([include/config.h])
 AC_PREFIX_DEFAULT([/usr/local])
 
 
@@ -89,21 +89,24 @@ AC_PROG_CC
 #AC_CHECK_LIB([lname], [lfunc])
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h limits.h stddef.h stdint.h stdlib.h string.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
 AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
+AC_TYPE_UINT32_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([strerror])
+AC_FUNC_MMAP
+AC_FUNC_REALLOC
+AC_CHECK_FUNCS([memset munmap strdup strerror])
 
 AC_CONFIG_FILES([
     Makefile
-    lexical_analyser/Makefile
-    syntax_analyser/Makefile
+    include/Makefile
+    src/Makefile
     unit_test/Makefile
 ])
 AC_OUTPUT

@@ -54,7 +54,7 @@
  *  \date  2013/03/28
  */
 
-#include "attribute.h"
+#include "ctx-fryer-c-rt/attribute.h"
 
 
 /*

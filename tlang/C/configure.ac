@@ -12,12 +12,12 @@ AC_PREFIX_DEFAULT([/usr/local])
 
 # Resolve arguments
 
-# Set additional include path
+# Set additional include paths
 AC_MSG_CHECKING([for additional include paths])
 AC_ARG_WITH([include],
     AS_HELP_STRING([--with-include], [Set additional include paths (':' separated list)]),
     [   # --with-include specified
-        includes=`echo "${withval}" | sed -e 's/:/ -I/g'`
+        includes=`echo "${withval}" | sed -e 's/^/-I/' -e 's/:/ -I/g'`
         CFLAGS="${CFLAGS} ${includes}"
         AC_MSG_RESULT([${includes}])
     ],

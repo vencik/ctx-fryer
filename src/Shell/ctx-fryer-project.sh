@@ -105,16 +105,16 @@ code: terminal_symbols_fsa.xml lr_parser.xml tlangs
 tlangs: tlangs_prepare tlangs_configure $tlangs
 
 tlangs_prepare:
-	for d in $tlangs; do \
+	@for d in $tlangs; do \
 	    if test -f \$\$d/prepare.sh; then \
 	        ( cd \$\$d; sh ./prepare.sh ) || break; \
 	    fi \
 	done
 
 tlangs_configure:
-	for d in $tlangs; do \
+	@for d in $tlangs; do \
 	    if test -x \$\$d/configure; then \
-	        ( cd \$\$d; ./configure ) || break; \
+	        ( cd \$\$d; ./configure --with-include="${prefix}/include" ) || break; \
 	    fi \
 	done
 
@@ -124,17 +124,17 @@ $tlangs:
 test: code tlangs_test
 
 tlangs_test:
-	for d in $tlangs; do \
+	@for d in $tlangs; do \
 	    \$(MAKE) --directory=\$\$d test || break; \
 	done
 
 tlangs_clean:
-	for d in $tlangs; do \
+	@for d in $tlangs; do \
 	    \$(MAKE) --directory=\$\$d clean || break; \
 	done
 
 tlangs_purge:
-	for d in $tlangs; do \
+	@for d in $tlangs; do \
 	    \$(MAKE) --directory=\$\$d purge || break; \
 	done
 

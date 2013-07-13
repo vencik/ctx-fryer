@@ -10,7 +10,7 @@
  *  \date  2012/06/15
  */
 
-#include "fsa.h"
+#include "ctx-fryer-c-rt/fsa.h"
 
 
 /**

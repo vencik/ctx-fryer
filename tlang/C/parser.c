@@ -12,7 +12,7 @@
 #include "fsa_table.h"
 #include "parser_tables.h"
 
-#include "syntax_analyser.h"
+#include "ctx-fryer-c-rt/syntax_analyser.h"
 
 
 syxa_t *parser_create(syxa_t *parser,

@@ -10,7 +10,7 @@
  *  \date  2012/08/24
  */
 
-#include "syntax_analyser.h"
+#include "ctx-fryer-c-rt/syntax_analyser.h"
 
 
 /**

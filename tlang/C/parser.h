@@ -15,7 +15,7 @@
  *  \date  2012/09/05
  */
 
-#include "syntax_analyser.h"
+#include "ctx-fryer-c-rt/syntax_analyser.h"
 
 
 /**

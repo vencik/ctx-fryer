@@ -1264,10 +1264,11 @@
  */
 
 #include "nonterminals.h"
-#include "builtin_attr.h"
 #include "extern_attr.h"
-#include "grammar.h"
-#include "syntax_analyser.h"
+
+#include "ctx-fryer-c-rt/grammar.h"
+#include "ctx-fryer-c-rt/syntax_analyser.h"
+#include "ctx-fryer-c-rt/builtin_attr.h"
 
 #include &lt;assert.h&gt;
 

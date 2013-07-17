@@ -3,10 +3,10 @@
 AC_PREREQ([2.68])
 AC_INIT([ctx-fryer], [0.1.0], [ctx-fryer@lopucha.net])
 AM_INIT_AUTOMAKE
-#LT_INIT
+LT_INIT
 AC_CONFIG_MACRO_DIR([m4])
-#AC_CONFIG_SRCDIR([src/CXX/ctx_fryer/TODO.cpp])
-#AC_CONFIG_HEADERS([src/CXX/ctx_fryer/config.h])
+AC_CONFIG_SRCDIR([src/CXX/container/table.hpp])  # TODO: use generator .cpp when created
+AC_CONFIG_HEADERS([src/CXX/config.h])
 AC_PREFIX_DEFAULT([/usr/local])
 
 
@@ -160,18 +160,21 @@ AC_ARG_ENABLE([strip],
 # Checks for programs.
 AC_CHECK_PROG([PERL], [perl], [/usr/bin/perl])
 AC_PROG_CXX
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
 
 # Checks for libraries.
 #AC_CHECK_LIB([lname], [lfunc])
 
 # Checks for header files.
-#AC_CHECK_HEADERS([])
+AC_CHECK_HEADERS([])
 
 # Checks for typedefs, structures, and compiler characteristics.
-#AC_TYPE_SIZE_T
+AC_HEADER_STDBOOL
+AC_C_INLINE
 
 # Checks for library functions.
-#AC_CHECK_FUNCS([])
+AC_CHECK_FUNCS([])
 
 
 # Run configure in run-time support directories
@@ -200,6 +203,11 @@ AC_CONFIG_FILES([
     Makefile
     examples/Makefile
     src/Makefile
+    src/CXX/Makefile
+    src/CXX/meta/Makefile
+    src/CXX/container/Makefile
+    src/CXX/unit_test/Makefile
+    src/CXX/unit_test/container/Makefile
     src/Shell/Makefile
     src/Shell/ctx-fryer-paths.sh
     src/XML/Makefile

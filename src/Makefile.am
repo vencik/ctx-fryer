@@ -1,4 +1,4 @@
-SUBDIRS = Shell Perl XML
+SUBDIRS = CXX Shell Perl XML
 
 .PHONY: Perl/Makefile
 

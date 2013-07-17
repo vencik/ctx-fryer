@@ -133,9 +133,9 @@ run_autogen_in () {
 # Create C language real-time libs configure script & .in files
 run_autogen_in "rt/C"
 
-#run_libtoolize
+run_libtoolize
 run_aclocal
-#run_autoheader
+run_autoheader
 run_automake
 run_autoconf
 

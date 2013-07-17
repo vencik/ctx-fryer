@@ -11,6 +11,9 @@ fi
 # Make it
 make || exit $?
 
+# Test it
+make check || exit $?
+
 # Installation might need superuser priviledges...
 cat <<HERE
 

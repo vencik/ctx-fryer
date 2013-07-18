@@ -96,8 +96,10 @@ AC_ARG_ENABLE([strip],
 
 
 # Checks for programs.
-AC_CHECK_PROG([XSLTPROC], [xsltproc], [/usr/bin/xsltproc])
 AC_PROG_CC
+
+AC_PATH_PROG([XSLTPROC], [xsltproc])
+test -n "${XSLTPROC}" || AC_MSG_ERROR([xsltproc is required to generate target code])
 
 # Checks for libraries.
 #AC_CHECK_LIB([lname], [lfunc])

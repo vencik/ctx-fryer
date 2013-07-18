@@ -37,6 +37,31 @@ AC_ARG_ENABLE([generator],
     ])
 AM_CONDITIONAL([ENABLE_GENERATOR], [test x$enable_generator = xtrue])
 
+# Enable generator prototype
+AC_MSG_CHECKING([whether to build the generator prototype])
+AC_ARG_ENABLE([generator-prototype],
+    AS_HELP_STRING([--enable-generator-prototype], [Build the generator prototype (default: yes)]),
+    [   # --enable-generator-prototype specified
+        enable_generator_prototype=true
+        case "${enableval}" in
+            no|false|off)
+                AC_MSG_RESULT([no])
+                enable_generator_prototype=false
+                ;;
+            yes|true|on|"")
+                AC_MSG_RESULT([yes])
+                ;;
+            *)
+                AC_MSG_ERROR([unexpected --enable-generator-prototype argument: ${enableval}])
+                ;;
+        esac
+    ],
+    [   # --enable-generator-prototype not specified
+        enable_generator_prototype=true
+        AC_MSG_RESULT([yes])
+    ])
+AM_CONDITIONAL([ENABLE_GENERATOR_PROTOTYPE], [test x$enable_generator_prototype = xtrue])
+
 # Enable RT support
 AC_MSG_CHECKING([whether to build real-time support])
 AC_ARG_ENABLE([rt-support],
@@ -86,6 +111,31 @@ AC_ARG_ENABLE([C-rt-support],
         AC_MSG_RESULT([yes])
     ])
 AM_CONDITIONAL([ENABLE_C_RT_SUPPORT], [test x$enable_C_rt_support = xtrue])
+
+# Enable documentation build
+AC_MSG_CHECKING([whether to build documentation])
+AC_ARG_ENABLE([doc],
+    AS_HELP_STRING([--enable-doc], [Build documentation (default: yes if asciidoc is available)]),
+    [   # --enable-doc specified
+        enable_doc=true
+        case "${enableval}" in
+            no|false|off)
+                AC_MSG_RESULT([no])
+                enable_doc=false
+                ;;
+            yes|true|on|"")
+                AC_MSG_RESULT([yes])
+                ;;
+            *)
+                AC_MSG_ERROR([unexpected --enable-doc argument: ${enableval}])
+                ;;
+        esac
+    ],
+    [   # --enable-doc not specified
+        enable_doc=true
+        AC_MSG_RESULT([yes])
+    ])
+AM_CONDITIONAL([ENABLE_DOC], [test x$enable_doc = xtrue])
 
 # Enable debug-only code
 AC_MSG_CHECKING([whether to enable debug code])
@@ -158,10 +208,21 @@ AC_ARG_ENABLE([strip],
 
 
 # Checks for programs.
-AC_CHECK_PROG([PERL], [perl], [/usr/bin/perl])
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
+
+# Perl is only required for the prototype, at least for now
+AM_COND_IF([ENABLE_GENERATOR_PROTOTYPE], [
+    AC_PATH_PROG([PERL], [perl], [])
+    test -n "${PERL}" || AC_MSG_ERROR([Perl is required for the generator prototype])
+])
+
+# AsciiDoc is required for documentation
+AM_COND_IF([ENABLE_DOC], [
+    AC_PATH_PROG([ASCIIDOC], [asciidoc], [])
+    test -n "${ASCIIDOC}" || AC_MSG_ERROR([AsciiDoc is required for documentation build])
+])
 
 # Checks for libraries.
 #AC_CHECK_LIB([lname], [lfunc])
@@ -214,5 +275,6 @@ AC_CONFIG_FILES([
     rt/Makefile
     tlang/Makefile
     tlang/C/Makefile.xslt
+    doc/Makefile
 ])
 AC_OUTPUT

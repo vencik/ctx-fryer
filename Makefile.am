@@ -11,3 +11,7 @@ endif
 if ENABLE_RT_SUPPORT
 SUBDIRS += rt
 endif
+
+if ENABLE_DOC
+SUBDIRS += doc
+endif

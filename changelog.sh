@@ -27,7 +27,7 @@ BEGIN {
 }
 
 /^#changelog/ {
-    break;
+    next;
 }
 
 {

@@ -221,7 +221,7 @@ AM_COND_IF([ENABLE_GENERATOR_PROTOTYPE], [
 # AsciiDoc is required for documentation
 AM_COND_IF([ENABLE_DOC], [
     AC_PATH_PROG([ASCIIDOC], [asciidoc], [])
-    test -n "${ASCIIDOC}" || AC_MSG_ERROR([AsciiDoc is required for documentation build])
+    test -n "${ASCIIDOC}" || AC_MSG_ERROR([AsciiDoc is required for doc build (--disable-doc will help)])
 ])
 
 # Checks for libraries.

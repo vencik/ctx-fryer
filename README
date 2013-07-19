@@ -1,6 +1,64 @@
-ctx-fryer
+CTX Fryer
 =========
 
-Multilingual &amp; flexible CFL parser generator with support for grammar attribution
+Multilingual & flexible CFL parser generator with support for grammar attribution
 
 http://lopucha.net/ctx-fryer
+
+
+WARNING
+-------
+
+Please note that the project is at the beginning.
+It's not mature enough, yet.
+It's already capable of producing working parsers, but there's a lot of work
+ahead.
+For instance, documentation (both user and development) is almost missing;
+that's probably the next thing to focus on.
+If you read this, I assume you might be interested in development of
+the project since it's not really ready for a release.
+If that is so, don't hesitate to contact the author (see Contact info, below).
+
+
+Installation
+------------
+
+See INSTALL document in this directory.
+
+
+Legal notes
+-----------
+
+The project is free software.
+
+It uses several licenses: GNU GPL for the generator itself (the Perl prototype uses
+Perl Artistic License).
+GNU LGPL is used for C run-time support libraries (i.e. the code you need linked
+to your program so that it does the actual parsing).
+That's because the author doesn't want to limit the project usability only to
+free/opensource software; proprietary software developers are people, too,
+however ugly, smelly, unshaven...  Damn that mirror!
+
+Support for other target languages should follow the same idea.
+
+The above means in short that you can use and redistribute the project freely
+and you are entitled to use the generated code and the real-time support libraries
+in your project with no practical limitations except of honouring the author's
+rights and committing any (reasonable) changes back to the community.
+
+Of course, if you or your company decide to make a donation (however small)
+to the project, the author won't be angry with you... ;-)
+Other forms of support (web hosting, help with further development etc)
+are welcome, too.
+
+
+Contact
+-------
+
+ctx-fryer@lopucha.net
+
+
+Author
+------
+
+Vaclav Krpec  <vencik@razdva.cz>

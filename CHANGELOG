@@ -1,15 +1,29 @@
 CTX Fryer Project Change Log
 ============================
 
-The change log was generated on Fri Jul 19 13:39:21 CEST 2013.
+The change log was generated on Fri Jul 19 13:42:41 CEST 2013.
 Below, the committed changes appear in reversed order (most recent first).
 Commit hashes are provided to simplify search for the particular commit;
 just append the hash to the following URL:
 https://github.com/vencik/ctx-fryer/commit/
 
 
+changelog.sh: fixed changelog commit skipping
+---------------------------------------------
+Date: Fri Jul 19 13:42:10 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 16b96f6f914086f30b50b4b4d0daf051d6ed984d
+
+
+#changelog
+-----------
+Date: Fri Jul 19 13:39:21 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: eeefe207570a40b47cc7ce69c74a6253119395a9
+
+
 changelog.sh commits CHANGELOG automatically
---------------------------------------------
+---------------------------------------------
 Date: Fri Jul 19 13:38:32 2013 +0200
 By:   vencik  <vencik@razdva.cz>
 Hash: b3c763d233aa7e33df49d1089635158ffb7111b8

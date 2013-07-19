@@ -45,4 +45,4 @@ BEGIN {
 ' >> ${log_file}
 
 # Commit the new change log
-git commit --dry-run -m "#changelog" ${log_file}
+git commit -m "#changelog" ${log_file}

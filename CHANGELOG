@@ -1,0 +1,171 @@
+CTX Fryer Project Change Log
+============================
+
+The change log was generated on Fri Jul 19 13:39:21 CEST 2013.
+Below, the committed changes appear in reversed order (most recent first).
+Commit hashes are provided to simplify search for the particular commit;
+just append the hash to the following URL:
+https://github.com/vencik/ctx-fryer/commit/
+
+
+changelog.sh commits CHANGELOG automatically
+--------------------------------------------
+Date: Fri Jul 19 13:38:32 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: b3c763d233aa7e33df49d1089635158ffb7111b8
+
+
+Added automatical CHANGELOG generator
+--------------------------------------
+Date: Fri Jul 19 13:31:52 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: beca8517da2e03d93ba06031930ad107b5c48fb7
+
+
+Added (at least) some info
+---------------------------
+Date: Fri Jul 19 10:49:11 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 0e6b73a4fb5b8549e4425b5d9efdc3b12600d435
+
+
+Documentation moved from lopucha.net project
+---------------------------------------------
+Date: Thu Jul 18 18:46:14 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 42d69f504538c68f7346d70edfeb090948915e8e
+
+
+make check in src/Perl redirected to test
+------------------------------------------
+Date: Wed Jul 17 14:15:06 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 1f2d936c368d16fdb0c9738bf5713c07f96ca89c
+
+For compatibility with GNU autotools & to allow
+integrated all-over unit testing by make check.
+Note, however, that there are no UTs for the prototype...
+
+
+Initial implementation of container::table
+-------------------------------------------
+Date: Wed Jul 17 10:12:48 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 295a5609c7fb140f6b56cff9fcf9ac60ef468b31
+
+... plus its dependencies:
+meta::type_list
+container::value_list
+
+
+C tlang code generation fixed
+------------------------------
+Date: Sat Jul 13 08:36:54 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: c549dac7d9a6b1d0d3c564a4b9284c331bf3af0d
+
+
+Directory structure & build cleaning
+-------------------------------------
+Date: Fri Jul 12 09:10:58 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 3448524129203b523c1976777ef50aba1d59fa40
+
+
+Proper autotools-based pkg build configuration
+-----------------------------------------------
+Date: Sun Jul 7 16:17:02 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 4f78de9dbf8a5b71526bc5ca48f4109f68b09348
+
+
+autogen.sh: en_GB used (as should always be)
+---------------------------------------------
+Date: Tue Jul 2 15:13:05 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 1b20e6dd72d0f3e1f98ccd4c70d383066871d523
+
+
+Shell scripts rework
+---------------------
+Date: Tue Jul 2 15:11:51 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 5be2f6945eaef723f05ff76385bdfae8b865be02
+
+
+Source organisation changes
+----------------------------
+Date: Wed Jun 26 15:01:01 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 3db9cdc48ef2675a21f37a3a3c91d15f36acd699
+
+1/ Perl modules prefixed with CTXFryer (installation preparation),
+   scripts renamed (ctx-fryer-* template)
+   TODO: Make appropriate changes in Shell scripts
+2/ Source language directories renamed
+3/ License files moved to respective subdirectories
+
+
+C target templates: configure.ac introduction
+----------------------------------------------
+Date: Sat Jun 22 14:06:57 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: ba4560019a5d823ce860b34625e36404cecabdb3
+
+
+C runtime lib: legal notice added (GNU LGPL v3)
+------------------------------------------------
+Date: Sat Jun 22 11:48:25 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: af312f4fdc333bd863956c97c6c0285f4e014b42
+
+
+RT lib UT: test script permissions fixed
+-----------------------------------------
+Date: Fri Jun 21 16:20:22 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 75a56f37098225438496ac5eff51e2702c03c8d8
+
+
+autogen.sh improvements
+------------------------
+Date: Fri Jun 21 16:18:59 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 49d83a8a36c8dc7ce5b740fe1a8697573d4f0eda
+
+1/ added call to autoheader to create config.h.in
+2/ output colorised
+
+
+Initial commit
+---------------
+Date: Wed Jun 19 17:36:34 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: f6fee7ba7695bcf5c14c402cfa467b351e910971
+
+Working generator prototype (in Perl)
+XSLT transforms to C and LaTeX (parser documentation)
+A few examples used to debug & tune the algorithms
+Installation & packaging is still incomplete
+
+
+README.md -> README
+--------------------
+Date: Mon May 6 16:10:37 2013 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 1f47ca35775d72d88f227887291d42477dc229ea
+
+
+README.md: added project homepage URL
+--------------------------------------
+Date: Wed Apr 24 14:34:35 2013 +0300
+By:   Václav Krpec  <vencik@razdva.cz>
+Hash: d05184997882dc3629a127e105c450a60fc6074a
+
+
+Initial commit
+---------------
+Date: Mon Nov 12 04:51:14 2012 -0800
+By:   Václav Krpec  <vencik@razdva.cz>
+Hash: fb31c7ad1363a17159db7601a7e0a5da131e8bb4
+

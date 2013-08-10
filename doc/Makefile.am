@@ -1,4 +1,3 @@
-rev_date = $(shell date "+%d %B %Y")
 ftp_host = ftp.freehostia.com
 ftp_root = lopucha.net/ctx-fryer
 
@@ -8,8 +7,8 @@ htmldocdir = $(docdir)/HTML
 htmldoc_DATA = \
     index.html
 
-%.html: %.txt
-	$(ASCIIDOC) -a revdate="$(rev_date)" -a revnumber="$(PACKAGE_VERSION)" $<
+index.html: index.txt
+	$(ASCIIDOC) -a revdate="`date '+%d %B %Y'`" -a revnumber="$(PACKAGE_VERSION)" $<
 
 # Project web upload
 noinst_SCRIPTS = ftp.sh

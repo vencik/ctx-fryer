@@ -5,10 +5,14 @@ ftp_root = lopucha.net/ctx-fryer
 htmldocdir = $(docdir)/HTML
 
 htmldoc_DATA = \
-    index.html
+    index.html \
+    changelog.html
 
 index.html: index.txt
-	$(ASCIIDOC) -a revdate="`date '+%d %B %Y'`" -a revnumber="$(PACKAGE_VERSION)" $<
+	$(ASCIIDOC) -o $@ -a revdate="`date '+%d %B %Y'`" -a revnumber="$(PACKAGE_VERSION)" $<
+
+changelog.html: changelog.txt
+	$(ASCIIDOC) -o $@ $<
 
 # Project web upload
 noinst_SCRIPTS = ftp.sh

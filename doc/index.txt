@@ -16,6 +16,8 @@ See link:https://github.com/vencik/ctx-fryer[https://github.com/vencik/ctx-fryer
 
 TODO: Some actual info, do-not-miss etc comes here.
 
+link:changelog.html[CHANGELOG]
+
 'Vaclav Krpec'
 ************************************************************************
 

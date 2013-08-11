@@ -1,5 +1,7 @@
 #!/bin/sh
 
+this=`basename $0`
+
 log_file="CHANGELOG"
 
 
@@ -8,7 +10,8 @@ cat > ${log_file} <<HERE
 CTX Fryer Project Change Log
 ============================
 
-The change log was generated on `date`.
+The change log was generated on `date`
+by the ${this} script.
 Below, the committed changes appear in reversed order (most recent first).
 Commit hashes are provided to simplify search for the particular commit;
 just append the hash to the following URL:
@@ -30,7 +33,7 @@ BEGIN {
 }
 
 {
-    sub("\n", "");
+    sub("^\n", "");
 
     ul = "";
     for (i = 0; i < length($1); ++i)

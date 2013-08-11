@@ -14,7 +14,6 @@ Commit hashes are provided to simplify search for the particular commit;
 just append the hash to the following URL:
 https://github.com/vencik/ctx-fryer/commit/
 
-
 HERE
 
 # Transform git log into change log
@@ -26,16 +25,18 @@ BEGIN {
     RS = "\1";
 }
 
-/^#changelog/ {
+/^\n?#changelog/ {
     next;
 }
 
 {
+    sub("\n", "");
+
     ul = "";
     for (i = 0; i < length($1); ++i)
         ul = ul "-";
 
-    print $1 "\n" ul "\n" \
+    print "\n" $1 "\n" ul "\n" \
         "Date: " $5 "\n" \
         "By:   " $3 "  <" $4 ">\n" \
         "Hash: " $2 "\n";

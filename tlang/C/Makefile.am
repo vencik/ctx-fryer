@@ -1,6 +1,9 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS  = -I m4
 
+SUBDIRS = unit_test
+
+
 # Compiler & linker flags
 AM_CFLAGS  = -Wall -Werror
 AM_LDFLAGS =

@@ -11,3 +11,9 @@ Ctlang_DATA = \
     C/parser.c \
     C/parser.h \
     C/parser_tables.h
+
+Ctlangutdir   = $(Ctlangdir)/unit_test
+Ctlangut_DATA = \
+    C/unit_test/Makefile.am \
+    C/unit_test/test.c \
+    C/unit_test/test.sh

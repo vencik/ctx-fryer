@@ -35,9 +35,6 @@ ctx_fryer__create_project () {
     project_file="$project_dir/def_file"
 
     tlangs=""
-    tlangs_test=""
-    tlangs_clean=""
-    tlangs_purge=""
     tlangs_hint=1
 
     tlangs_def=`ctx-fryer-cfg2tlang "$project_file"` \
@@ -54,9 +51,6 @@ ctx_fryer__create_project () {
             || FATAL "Failed to create target language directory $tlang_dir"
 
             tlangs="$tlang $tlangs"
-            tlangs_test="${tlang}-test $tlangs_test"
-            tlangs_clean="${tlang}-clean $tlangs_clean"
-            tlangs_purge="${tlang}-purge $tlangs_purge"
         else
             WARN "Sorry, target language $tlang isn't supported (yet)"
 
@@ -106,36 +100,49 @@ tlangs: tlangs_prepare tlangs_configure $tlangs
 
 tlangs_prepare:
 	@for d in $tlangs; do \
-	    if test -f \$\$d/prepare.sh; then \
+	    if test ! -f \$\$d/.prepared -a -f \$\$d/prepare.sh; then \
+	        echo "Preparing build in target language directory \$\$d"; \
 	        ( cd \$\$d; sh ./prepare.sh ) || break; \
+	        touch \$\$d/.prepared; \
+	        echo "Build in target language directory \$\$d prepared"; \
 	    fi \
 	done
 
 tlangs_configure:
 	@for d in $tlangs; do \
-	    if test -x \$\$d/configure; then \
+	    if test ! -f \$\$d/.configured -a -x \$\$d/configure; then \
+	        echo "Configuring build in target language directory \$\$d"; \
 	        ( cd \$\$d; ./configure --with-include="${prefix}/include" ) || break; \
+	        touch \$\$d/.configured; \
+	        echo "Build in target language directory \$\$d configured"; \
 	    fi \
 	done
 
 $tlangs:
 	\$(MAKE) --directory=\$@
 
-test: code tlangs_test
+check: code tlangs_check
 
-tlangs_test:
+tlangs_check:
 	@for d in $tlangs; do \
-	    \$(MAKE) --directory=\$\$d test || break; \
+	    echo "Checking build in target language directory \$\$d"; \
+	    \$(MAKE) --directory=\$\$d check || break; \
+	    echo "Build in target language directory \$\$d checked"; \
 	done
 
 tlangs_clean:
 	@for d in $tlangs; do \
+	    echo "Cleaning build in target language directory \$\$d"; \
 	    \$(MAKE) --directory=\$\$d clean || break; \
+	    echo "Build in target language directory \$\$d clean"; \
 	done
 
 tlangs_purge:
 	@for d in $tlangs; do \
+	    echo "Purging build in target language directory \$\$d"; \
 	    \$(MAKE) --directory=\$\$d purge || break; \
+	    \$(rm) \$\$d/.prepared \$\$d/.configured; \
+	    echo "Build in target language directory \$\$d purged"; \
 	done
 
 documentation: terminal_symbols_fsa.xml lr_parser.xml
@@ -167,7 +174,7 @@ report:
 	@echo 'removing the build-time mess.'
 	@echo 'To run automatic unit tests of the generated code'
 	@echo 'you should execute'
-	@echo '\$\$ make test'
+	@echo '\$\$ make check'
 	@echo '(this will check that all the tests defined in'
 	@echo 'TestCase sections of the project def. file pass).'
 	@echo 'You may also execute'

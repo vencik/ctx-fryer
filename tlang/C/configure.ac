@@ -118,5 +118,6 @@ AC_CHECK_FUNCS([strerror])
 
 AC_CONFIG_FILES([
     Makefile
+    unit_test/Makefile
 ])
 AC_OUTPUT

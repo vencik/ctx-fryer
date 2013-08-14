@@ -13,10 +13,10 @@ pkginclude_HEADERS = \
     srcfile.h \
     stack.h \
     syntax_analyser.h \
+    test.h \
     token.h
 
 
 # Internal headers
 noinst_HEADERS = \
-    config.h \
-    test.h
+    config.h

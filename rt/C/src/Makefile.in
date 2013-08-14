@@ -223,16 +223,16 @@ AM_LDFLAGS =
 # Debug mode specific settings
 # Note that CFLAGS already contain -DDEBUG in this mode
 
-# Parser run-time support
-lib_LTLIBRARIES = libctx-fryer-c-rt.la
+# Parser run-time & unit test support
+lib_LTLIBRARIES = \
+    libctx-fryer-c-rt.la \
+    libctx-fryer-c-rt-ut.la
+
 libctx_fryer_c_rt_la_SOURCES = \
     objpool.c objpack.c buffer.c stack.c srcfile.c \
     ptree.c attribute.c builtin_attr.c \
     lexical_analyser.c token.c syntax_analyser.c
 
-
-# Unit test support
-check_LTLIBRARIES = libctx-fryer-c-rt-ut.la
 libctx_fryer_c_rt_ut_la_SOURCES = \
     test.c
 
@@ -270,15 +270,6 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-
-clean-checkLTLIBRARIES:
-	-test -z "$(check_LTLIBRARIES)" || rm -f $(check_LTLIBRARIES)
-	@list='$(check_LTLIBRARIES)'; for p in $$list; do \
-	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
-	  test "$$dir" != "$$p" || dir=.; \
-	  echo "rm -f \"$${dir}/so_locations\""; \
-	  rm -f "$${dir}/so_locations"; \
-	done
 install-libLTLIBRARIES: $(lib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
 	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"
@@ -311,7 +302,7 @@ clean-libLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libctx-fryer-c-rt-ut.la: $(libctx_fryer_c_rt_ut_la_OBJECTS) $(libctx_fryer_c_rt_ut_la_DEPENDENCIES) $(EXTRA_libctx_fryer_c_rt_ut_la_DEPENDENCIES) 
-	$(LINK)  $(libctx_fryer_c_rt_ut_la_OBJECTS) $(libctx_fryer_c_rt_ut_la_LIBADD) $(LIBS)
+	$(LINK) -rpath $(libdir) $(libctx_fryer_c_rt_ut_la_OBJECTS) $(libctx_fryer_c_rt_ut_la_LIBADD) $(LIBS)
 libctx-fryer-c-rt.la: $(libctx_fryer_c_rt_la_OBJECTS) $(libctx_fryer_c_rt_la_DEPENDENCIES) $(EXTRA_libctx_fryer_c_rt_la_DEPENDENCIES) 
 	$(LINK) -rpath $(libdir) $(libctx_fryer_c_rt_la_OBJECTS) $(libctx_fryer_c_rt_la_LIBADD) $(LIBS)
 
@@ -444,7 +435,6 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-	$(MAKE) $(AM_MAKEFLAGS) $(check_LTLIBRARIES)
 check: check-am
 all-am: Makefile $(LTLIBRARIES)
 installdirs:
@@ -483,8 +473,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-checkLTLIBRARIES clean-generic clean-libLTLIBRARIES \
-	clean-libtool mostlyclean-am
+clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -552,22 +542,21 @@ ps-am:
 
 uninstall-am: uninstall-libLTLIBRARIES
 
-.MAKE: check-am install-am install-strip
+.MAKE: install-am install-strip
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean \
-	clean-checkLTLIBRARIES clean-generic clean-libLTLIBRARIES \
-	clean-libtool ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-libLTLIBRARIES \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-libLTLIBRARIES
+.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
+	clean-libLTLIBRARIES clean-libtool ctags distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am \
+	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-libLTLIBRARIES
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

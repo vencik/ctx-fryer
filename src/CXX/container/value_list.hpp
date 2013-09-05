@@ -45,32 +45,52 @@
 
 namespace container {
 
-/** Value list */
+/**
+ *  \brief  Value list
+ *
+ *  The value list is composed of "head" and "tail".
+ *  The head term hereby represents sub-list except the last item,
+ *  which is the tail.
+ *  The template definition is thus recursive.
+ *  Recursion fixed point is then represented by empty value list.
+ */
 template <typename tlist>
 class value_list {
     public:
 
+    /** Values types list */
     typedef tlist base_t;
 
+    /** Type of the value list head */
     typedef value_list<typename tlist::head> head_t;
 
+    /** Type of the value list tail */
     typedef typename tlist::tail tail_t;
 
     private:
 
-    head_t m_head;
-    tail_t m_tail;
+    head_t m_head;  /**< Value list head */
+    tail_t m_tail;  /**< Value list tail */
 
     public:
 
+    /** Default constructor */
     value_list(): m_head(), m_tail() {}
 
+    /**
+     *  \brief  Recursive constructor
+     *
+     *  \param  head  Head initialiser
+     *  \param  tail  Tail initialiser
+     */
     value_list(const head_t & head, const tail_t & tail):
         m_head(head), m_tail(tail) {}
 
+    /** Copy constructor */
     value_list(const value_list & orig):
         m_head(orig.m_head), m_tail(orig.m_tail) {}
 
+    /** Assignment operator */
     inline value_list & operator = (const value_list & rval) {
         m_head = rval.m_head;
         m_tail = rval.m_tail;
@@ -78,17 +98,22 @@ class value_list {
         return *this;
     }
 
+    /** Constant head getter */
     inline const head_t & head() const { return m_head; }
 
+    /** Head getter */
     inline head_t & head() { return m_head; }
 
+    /** Constant tail getter */
     inline const tail_t & tail() const { return m_tail; }
 
+    /** Tail getter */
     inline tail_t & tail() { return m_tail; }
 
 };  // end of template class value_list
 
-/** Value list (recursion fixed point) */
+/** \cond */
+// Value list (recursion fixed point)
 template <>
 class value_list<meta::null_type> {
     public:
@@ -104,6 +129,7 @@ class value_list<meta::null_type> {
     }
 
 };  // end of template class spec. value_list<meta::null_type>
+/** \endcond */
 
 
 /** Constant references list */

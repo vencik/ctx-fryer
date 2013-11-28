@@ -1,3 +1,3 @@
 noinst_HEADERS = \
-    value_list.hpp \
-    table.hpp
+    value_list.hxx \
+    table.hxx

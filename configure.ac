@@ -5,7 +5,7 @@ AC_INIT([ctx-fryer], [0.1.0], [ctx-fryer@lopucha.net])
 AM_INIT_AUTOMAKE
 LT_INIT
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SRCDIR([src/CXX/container/table.hpp])  # TODO: use generator .cpp when created
+AC_CONFIG_SRCDIR([src/CXX/container/table.hxx])  # TODO: use generator .cxx when created
 AC_CONFIG_HEADERS([src/CXX/config.h])
 AC_PREFIX_DEFAULT([/usr/local])
 
@@ -225,7 +225,8 @@ AM_COND_IF([ENABLE_DOC], [
 ])
 
 # Checks for libraries.
-#AC_CHECK_LIB([lname], [lfunc])
+AC_CHECK_LIB([atomic-ops], [comp_and_swap])
+AC_CHECK_LIB([pthreads],   [pthread_create])
 
 # Checks for header files.
 AC_CHECK_HEADERS([])
@@ -266,7 +267,9 @@ AC_CONFIG_FILES([
     src/Makefile
     src/CXX/Makefile
     src/CXX/meta/Makefile
+    src/CXX/dynamic/Makefile
     src/CXX/container/Makefile
+    src/CXX/mt/Makefile
     src/CXX/unit_test/Makefile
     src/CXX/unit_test/container/Makefile
     src/Shell/Makefile

@@ -1,2 +1,2 @@
 noinst_HEADERS = \
-    type_list.hxx
+    pointer.hxx

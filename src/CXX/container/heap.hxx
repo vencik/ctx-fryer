@@ -860,10 +860,8 @@ class binomial_heap {
 
     /** Minimum getter */
     inline const T & get_min() const throw(std::logic_error) {
-        if (NULL == m_btrees)
+        if (NULL == m_min)
             throw std::logic_error("empty heap min. access");
-
-        assert(NULL != m_min);
 
         return m_min->value;
     }
@@ -1079,8 +1077,8 @@ class binomial_heap {
             // Merge from the heap
             if (NULL == m_btrees) {
                 // Pre-fix sizes
-                m_size = 0;
                 heap.m_size = m_size - 1;
+                m_size = 0;
 
                 swap(heap);
             }

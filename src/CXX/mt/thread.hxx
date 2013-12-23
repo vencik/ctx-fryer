@@ -4,12 +4,16 @@
 #include "mt/mutex.hxx"
 #include "mt/condition.hxx"
 
-#include "dynamic/pointer.hxx"
+#include "container/queue.hxx"
+#include "container/stack.hxx"
 
+#include <iostream>
+#include <stdexcept>
 #include <cassert>
 #include <cstdlib>
+#include <climits>
 
-export "C" {
+extern "C" {
 #include <pthread.h>
 }
 
@@ -18,46 +22,17 @@ namespace mt {
 
 namespace impl {
 
-/** POSIX thread wrapper (abstract) */
+/**
+ *  \brief  POSIX thread wrapper
+ *
+ *  The class wraps more or less directly around \c pthread library
+ *  thread implementation, including passing of the main routine
+ *  as a (static) function pointer.
+ */
 class POSIX_thread {
     private:
 
     pthread_t m_impl;  /**< POSIX thread handle */
-
-    protected:
-
-    /**
-     *  \brief  Thread routine interface
-     *
-     *  \param  arg  Routine argument (passed from \c pthread_create)
-     *
-     *  \return A pointer (to be returned by the POSIX thread main function)
-     */
-    virtual void * routine(void * arg) = 0;
-
-    private:
-
-    /** Constructor of thread-local mirror object */
-    POSIX_thread(pthread_t impl): m_impl(impl) {}
-
-    /**
-     *  \brief  POSIX thread main routine
-     *
-     *  The static function is used as POSIX thread main function.
-     *  It creates the thread object \c self mirror (thread-local object
-     *  representing the thread) and executes its thread routine.
-     *
-     *  The routine is NOT exception-aware; exceptions are NOT caught.
-     *
-     *  \param  arg  Argument passed from \c pthread_create
-     *
-     *  \return Routine return pointer
-     */
-    static void * main(void * arg) {
-        POSIX_thread self(pthread_self());
-
-        return self.routine(arg);
-    }
 
     public:
 
@@ -104,7 +79,7 @@ class POSIX_thread {
                 case 0: break;
 
                 case ENOMEM:
-                    throw std::memory_error("POSIX thread attributes allocation failed");
+                    throw std::runtime_error("POSIX thread attributes allocation failed");
 
                 default:
                     throw std::runtime_error("POSIX thread attributes creation failed");
@@ -119,7 +94,7 @@ class POSIX_thread {
                 case 0: break;
 
                 case ENOMEM:
-                    throw std::memory_error("POSIX thread attributes deallocation failed");
+                    throw std::runtime_error("POSIX thread attributes deallocation failed");
 
                 default:
                     throw std::runtime_error("POSIX thread attributes destruction failed");
@@ -211,14 +186,15 @@ class POSIX_thread {
     /**
      *  \brief  Start POSIX thread
      *
-     *  Throws \c std::memory_error on memory error or \c std::runtime_error if
-     *  thread could not be started for other reasons.
+     *  Throws \c std::runtime_error on memory error or
+     *  if thread could not be started for other reasons.
      *
      *  \param  attrs  Thread attributes
+     *  \param  main   Thread routine
      *  \param  arg    Thread routine argument (to be passed to \c pthread_create)
      */
-    void start(const attr & attrs, void * arg) throw(std::memory_error, std::runtime_error) {
-        status = pthread_create(&m_impl, &attrs.impl, &main, arg);
+    void start(const attr & attrs, void * (* main)(void * ), void * arg) throw(std::runtime_error) {
+        int status = pthread_create(&m_impl, &attrs.impl, main, arg);
 
         switch (status) {
             case 0: break;
@@ -239,23 +215,29 @@ class POSIX_thread {
 
     public:
 
-    /** Constructor (default attributes, no routine init argument) */
-    POSIX_thread() { start(attr(), NULL); }
+    /** Constructor of current thread handle */
+    POSIX_thread(): m_impl(pthread_self()) {}
 
     /**
      *  \brief  Constructor (default attributes)
      *
-     *  \param  arg  Thread routine argument
+     *  \param  main  Thread routine
+     *  \param  arg   Thread routine argument (optional)
      */
-    POSIX_thread(void * arg) { start(attr(), arg); }
+    POSIX_thread(void * (* main)(void * ), void * arg = NULL) {
+        start(attr(), main, arg);
+    }
 
     /**
      *  \brief  Constructor
      *
      *  \param  attrs  Thread attributes
-     *  \param  arg    Thread routine argument
+     *  \param  main   Thread routine
+     *  \param  arg    Thread routine argument (optional)
      */
-    POSIX_thread(const attr & attrs, void * arg = NULL) { start(attrs, arg); }
+    POSIX_thread(const attr & attrs, void * (* main)(void *), void * arg = NULL) {
+        start(attrs, main, arg);
+    }
 
     /** Comparison of threads (negative) */
     inline bool operator != (const POSIX_thread & thread) const {
@@ -342,12 +324,12 @@ class POSIX_thread {
 
         int status = pthread_setcancelstate(state, &old);
 
-        if (state)
+        if (status)
             throw std::runtime_error("failed to set POSIX thread cancelation state");
 
         status = pthread_setcanceltype((int)type, &old);
 
-        if (state)
+        if (status)
             throw std::runtime_error("failed to set POSIX thread cancelation type");
     }
 
@@ -369,7 +351,7 @@ class POSIX_thread {
     inline static void cancel_point() { pthread_testcancel(); }
 
     /** Detach thread */
-    inline void detach() const throw(std::runtile_error) {
+    inline void detach() const throw(std::runtime_error) {
         int status = pthread_detach(m_impl);
 
         if (status)
@@ -386,7 +368,7 @@ class POSIX_thread {
 };  // end of class POSIX_thread
 
 // POSIX_thread static members initialisers
-void * POSIX_thread::CANCELED = PTHREAD_CANCELED;
+const void * POSIX_thread::CANCELED = PTHREAD_CANCELED;
 
 
 /**
@@ -417,34 +399,20 @@ void * POSIX_thread::CANCELED = PTHREAD_CANCELED;
  *
  *  This template class implements the pooling functionality.
  *  The \c queue_t template parameter is expected to provide implementation of
- *  the job queue.
+ *  the \c job queue.
  *  This (common) implementation only expects the following functions being
  *  defined by the queue:
  *
  *   bool empty();
- *   T pop();
- *
- *  The queue push operation may be highly specific; it is therefore not
- *  prototyped at all.
- *  For instance, priority queue requires the priority specification
- *  for push operation conversely to common FIFO queue.
+ *   job pop();
+ *   void push(const job & );
  */
-template <template <typename T> class queue_t>
+template <template <class> class queue, class job>
 class threadpool {
-    friend class worker;  /**< Pooled worker thread friend */
-
     public:
 
-    /** Job functor interface */
-    class job {
-        public:
-
-        /** The job realisation */
-        virtual void operator () () = 0;
-
-        virtual ~job() {}  // mandatory virtual destructor
-
-    };  // end of class job
+    typedef queue<job>         job_queue_t;  /**< Job queue     */
+    typedef impl::POSIX_thread worker_t;     /**< Pooled thread */
 
     private:
 
@@ -459,21 +427,12 @@ class threadpool {
     condition   m_wcond;      /**< Worker notification means */
     condition   m_pcond;      /**< Pool notification means   */
     mutex       m_mutex;      /**< Operation mutex           */
-
-    protected:
-
-    typedef queue_t<job> job_queue_t;  /**< Job queue type definition */
-
     job_queue_t m_job_queue;  /**< Job queue */
 
     private:
 
-    /**
-     *  \brief  Routine performed by all workers
-     *
-     *  \param  worker
-     */
-    void worker_routine(worker & wt) {
+    /** Routine performed by all worker threads (implementation) */
+    void worker_routine_impl() {
         lock4scope(m_mutex);
 
         --m_prep;
@@ -509,48 +468,39 @@ class threadpool {
             m_pcond.signal();
     }
 
-    /** Pooled worker tread */
-    class worker: public impl::POSIX_thread {
-        protected:
+    /**
+     *  \brief  Routine performed by all worker threads
+     *
+     *  \param  tpool  Thread pool
+     *
+     *  \return \c NULL
+     */
+    static void * worker_routine(void * tpool) {
+        assert(NULL != tpool);
 
-        /**
-         *  \brief  Worker routine implementation
-         *
-         *  IMPORTANT NOTE:
-         *  The routine is exception-aware; it doesn't allow propagation
-         *  of any error to POSIX thread main function.
-         *  Instead, it simply aborts the whole process.
-         *
-         *  \param  arg  Threadpool
-         *
-         *  \return \c NULL
-         */
-        void * routine(void * arg) {
-            threadpool * tp = reinterpret_cast<threadpool *>(arg);
+        threadpool * tp = reinterpret_cast<threadpool *>(tpool);
 
-            try {
-                tp->worker_routine(*this);
-            }
-            catch (std::exception & ex) {
-                std::cerr
-                    << "Threadpool worker routine: std. exception caught: "
-                    << ex.what()
-                    << std::endl;
+        try {
+            tp->worker_routine_impl();
+        }
+        catch (std::exception & ex) {
+            std::cerr
+                << "Threadpool worker routine: std. exception caught: "
+                << ex.what()
+                << std::endl;
 
-                ::abort();
-            }
-            catch (...) {
-                std::cerr
-                    << "Threadpool worker routine: unknown exception caught"
-                    << std::endl;
+            ::abort();
+        }
+        catch (...) {
+            std::cerr
+                << "Threadpool worker routine: unknown exception caught"
+                << std::endl;
 
-                ::abort();
-            }
-
-            return NULL;
+            ::abort();
         }
 
-    };  // end of class worker
+        return NULL;
+    }
 
     /**
      *  \brief  Allocate and start another worker thread
@@ -575,9 +525,9 @@ class threadpool {
         }
 
         try {
-            worker new_worker(this);
+            worker_t worker(&worker_routine, this);
 
-            new_worker.detach();
+            worker.detach();
         }
         catch (std::exception & ex) {
             // TODO: this should be logged
@@ -606,10 +556,10 @@ class threadpool {
      *  \param  ttl    Pooled thread expiration timeout
      */
     threadpool(
-        unsigned lo,
-        unsigned hi,
-        unsigned avail,
-        double   ttl
+        unsigned lo    = 0,
+        unsigned hi    = UINT_MAX,
+        unsigned avail = 0,
+        double   ttl   = 20.0
     ):
         m_lo(lo), m_hi(hi),
         m_prep(0), m_avail(0), m_cnt(0),
@@ -643,19 +593,58 @@ class threadpool {
     }
 
     /** Destructor */
-    ~threadpool() {
-        shutdown();
-    }
+    ~threadpool() { shutdown(); }
+
+    /** Job scheduling result */
+    enum job_sched_t {
+        JOB_SCHED_FAST,       /**< Available thread in pool, job should start quickly */
+        JOB_SCHED_NEWTHREAD,  /**< New thread created for the job                     */
+        JOB_SCHED_WAIT,       /**< Job has to wait for a thread in queue              */
+    };  // end of enum job_sched_t
 
     /**
-     *  \brief  Push another job to job queue (i.e. schedule job)
+     *  \brief  Schedule job
+     *
+     *  Push another job to job queue.
+     *  Jobs are popped from the queue by available threads.
+     *  Depending on thread availability and the pool capacity,
+     *  the job startup may differ substantially (see return codes).
+     *
+     *  Note that the return codes should be percieved as hints on
+     *  the job scheduling time; in corner cases, \c JOB_SCHED_WAIT
+     *  may mean much faster job startup then \c JOB_SCHED_NEWTHREAD
+     *  and perhaps even a bit faster then \c JOB_SCHED_FAST.
+     *  That will happen when a busy thread becomes available right
+     *  after the job was pooled.
+     *  Since the threads always check the job queue before going
+     *  to sleep in pool, in this case the thread will pop the job
+     *  and execute it almost immediately.
      *
      *  \param  j  Job
+     *
+     *  \retval JOB_SCHED_FAST      there's an available pooled thread,
+     *                              job should start pretty fast
+     *  \retval JOB_SCHED_NEWTHREAD new thread had to be started for the job
+     *  \retval JOB_SCHED_WAIT      no thread is available at the moment,
+     *                              the job will have to wait in queue
      */
-    inline void push(const job & j) {
-        lock4scope(m_mutex);
+    inline job_sched_t run(const job & j) {
+        do {  // pragmatic do ... while (0) loop allowing for break
+            lock4scope(m_mutex);
 
-        m_job_queue.push(j);
+            m_job_queue.push(j);
+
+            if (!m_avail) break;
+
+            // A thread is available, pass the job directly to it
+            m_wcond.signal();
+
+            return JOB_SCHED_FAST;
+
+        } while (0);  // break target & mutex unlock point
+
+        // Start new thread or wait for an existing one to become available
+        return start_worker() ? JOB_SCHED_NEWTHREAD : JOB_SCHED_WAIT;
     }
 
 };  // end of class threadpool
@@ -769,7 +758,7 @@ class thread {
      *
      *  \return \c true if and only if the thread was started
      */
-    bool start(const Routine::arg_t & arg) throw(std::logic_error, std::memory_error) {
+    bool start(typename Routine::arg_t & arg) throw(std::logic_error, std::runtime_error) {
         pthread_attr_t attr;
 
         int pt_st = pthread_attr_init(&attr);
@@ -789,7 +778,7 @@ class thread {
 
         // Handle memory failure with exception
         if (ENOMEM == pt_st)
-            throw std::memory_error("failed to init POSIX thread attributes");
+            throw std::runtime_error("failed to init POSIX thread attributes");
 
         m_status = STATUS_FAILED;
 
@@ -798,13 +787,10 @@ class thread {
 
     /**
      *  \brief  Create thread
-     *
-     *  \param  arg  Thread routine argument
      */
     thread():
         m_impl(0),
         m_status(STATUS_INIT),
-        m_arg(arg),
         m_xcode(0) {}
 
     /**
@@ -812,13 +798,12 @@ class thread {
      *
      *  \param  arg  Thread routine argument
      */
-    thread(Routine::arg_t arg):
+    thread(typename Routine::arg_t arg):
         m_impl(0),
         m_status(STATUS_INIT),
-        m_arg(arg),
         m_xcode(0)
     {
-        start();
+        start(arg);
     }
 
     /** Thread status getter */
@@ -941,17 +926,39 @@ class thread {
 /**
  *  \brief  Threadpool with FIFO job queue
  *
+ *  FIFO stands for First-In-First-Out; in case the jobs are queued,
+ *  they will be executed in order of scheduling times.
+ *
  *  See \ref impl::threadpool for common info.
  */
-typedef impl::threadpool<queue> threadpool_FIFO;
+template <typename job>
+class threadpool_FIFO: public impl::threadpool<container::queue, job> {};
 
 
 /**
  *  \brief  Threadpool with priority job queue
  *
+ *  In case the jobs are queued, they will be executed in order
+ *  of their priority.
+ *  The \c job template type must be comparable using \c < operator.
+ *  Smaller job means greater priority.
+ *
  *  See \ref impl::threadpool for common info.
  */
-typedef impl::threadpool<pqueue> threadpool_pqueue;
+template <typename job>
+class threadpool_priority: public impl::threadpool<container::pqueue, job> {};
+
+
+/**
+ *  \brief  Threadpool with LIFO job queue
+ *
+ *  LIFO stands for Last-In-First-Out; in case the jobs are queued,
+ *  they will be executed in reversed order of scheduling times.
+ *
+ *  See \ref impl::threadpool for common info.
+ */
+template <typename job>
+class threadpool_LIFO: public impl::threadpool<container::stack, job> {};
 
 }  // end of namespace mt
 

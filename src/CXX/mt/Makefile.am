@@ -4,4 +4,5 @@ noinst_HEADERS = \
     Makefile.am \
     mutex.hxx \
     rwlock.hxx \
+    semaphore.hxx \
     thread.hxx

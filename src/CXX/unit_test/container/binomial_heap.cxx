@@ -11,6 +11,8 @@ int main_impl(int argc, char * const argv[]) {
 
     int n;
 
+    std::cerr << "Creating the heap..." << std::endl;
+
     while (std::cin >> n) {
         heap1.add(n);
     }
@@ -18,6 +20,8 @@ int main_impl(int argc, char * const argv[]) {
     container::binomial_heap<int> heap2(heap1);
 
     int old_min = INT_MIN;
+
+    std::cerr << "Checking heap property..." << std::endl;
 
     while (!heap2.empty()) {
         int min = heap2.get_min();

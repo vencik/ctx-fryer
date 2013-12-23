@@ -71,11 +71,11 @@ class stack {
     inline bool pop(T & item) {
         if (empty()) return false;
 
-        impl_t::iterator t = m_impl.begin();
+        typename impl_t::iterator t = m_impl.begin();
 
         item = *t;
 
-        m_impl.remove(t);
+        m_impl.erase(t);
 
         return true;
     }

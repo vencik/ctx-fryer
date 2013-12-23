@@ -24,24 +24,24 @@ class atomic_int {
     typedef AO_t local;  /**< Compatible local value */
 
     /** Constructor of 0 */
-    atomic_int() { store_release_write(&m_impl, 0); }
+    atomic_int() { AO_store_release_write(&m_impl, 0); }
 
     /** Constructor */
-    atomic_int(local i) { store_release_write(&m_impl, i); }
+    atomic_int(local i) { AO_store_release_write(&m_impl, i); }
 
     /** Conversion to local value */
-    inline operator local () { return load_acquire(&m_impl); }
+    inline operator local () const { return AO_load_acquire(&m_impl); }
 
     /** Copy constructor */
     atomic_int(const atomic_int & orig) {
         local i = orig;
 
-        store_release_write(&m_impl, i);
+        AO_store_release_write(&m_impl, i);
     }
 
     /** Local value assignment */
     inline atomic_int & operator = (local i) {
-        store_release_write(&m_impl, i);
+        AO_store_release_write(&m_impl, i);
 
         return *this;
     }
@@ -56,7 +56,7 @@ class atomic_int {
      *  \return Original value
      */
     inline local fetch_and_add(local op) {
-        return fetch_and_add_full(&m_impl, op);
+        return AO_fetch_and_add_full(&m_impl, op);
     }
 
     /**

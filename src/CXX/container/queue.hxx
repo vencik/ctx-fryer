@@ -74,11 +74,11 @@ class queue {
     inline bool pop(T & item) {
         if (empty()) return false;
 
-        impl_t::iterator h = m_impl.begin();
+        typename impl_t::iterator h = m_impl.begin();
 
         item = *h;
 
-        m_impl.remove(h);
+        m_impl.erase(h);
 
         return true;
     }

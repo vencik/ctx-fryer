@@ -4,6 +4,7 @@
 #include "mt/mutex.hxx"
 
 #include <stdexcept>
+#include <cerrno>
 
 extern "C" {
 #include <pthread.h>
@@ -64,14 +65,16 @@ class condition {
     inline bool wait(mutex & mx, double timeout) throw(std::logic_error) {
         struct timespec wake_at;
 
-        int status = clock_gettime(CLOCK_REALTIME, &wake_at);
+        int status = clock_gettime(CLOCK_MONOTONIC, &wake_at);
 
-        // Realtime clock must be supported
         if (status)
             throw std::logic_error("POSIX condition timeout setting failed");
 
-        wake_at.tv_sec  += (time_t)timeout;
-        wake_at.tv_nsec += (long)(1000000000 * (timeout - wake_at.tv_sec));
+        time_t sec  = (time_t)timeout;
+        long   nsec = 1000000000 * (timeout - (double)sec);
+
+        wake_at.tv_sec  += sec;
+        wake_at.tv_nsec += nsec;
 
         status = pthread_cond_timedwait(&m_impl, &mx.m_impl, &wake_at);
 
@@ -120,7 +123,7 @@ class condition {
 
     /** Destructor */
     ~condition() {
-        int status = posix_cond_destroy(&m_impl);
+        int status = pthread_cond_destroy(&m_impl);
 
         switch (status) {
             case 0: return;
@@ -136,10 +139,14 @@ class condition {
     private:
 
     /** Copying is forbidden */
-    condition(const condition & orig) {}
+    condition(const condition & orig) {
+        throw std::logic_error("POSIX condition variable copying forbidden");
+    }
 
     /** Assignment is forbidden */
-    condition & operator = (const condition & orig) {}
+    condition & operator = (const condition & orig) {
+        throw std::logic_error("POSIX condition variable assignmant forbidden");
+    }
 
 };  // end of class condition
 

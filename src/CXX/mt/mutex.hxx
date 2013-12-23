@@ -2,25 +2,32 @@
 #define mt__mutex_hxx
 
 #include <stdexcept>
+#include <cerrno>
 
 extern "C" {
 #include <pthread.h>
 }
 
 
+/** \cond */
+// Instance name constructor for (un)lock4scope
+#define _scopelock_name_impl(base, line_no) base ## line_no
+#define _scopelock_name(base, line_no) _scopelock_name_impl(base, line_no)
+/** \endcond */
+
 /**
  *  \brief  Lock mutex till end of scope
  *
  *  \param  mutex  Mutex
  */
-#define lock4scope(mutex) mt::scopelock __scope_lock_ # __LINE__(mutex)
+#define lock4scope(mutex) mt::scopelock _scopelock_name(__scope_lock_, __LINE__)(mutex)
 
 /**
  *  \brief  Unlock mutex till end of scope
  *
  *  \param  mutex  Mutex
  */
-#define unlock4scope(mutex) mt::scopeunlock __scope_unlock_ # __LINE__(mutex)
+#define unlock4scope(mutex) mt::scopeunlock _scopelock_name(__scope_unlock_, __LINE__)(mutex)
 
 
 namespace mt {
@@ -118,10 +125,14 @@ class mutex {
     private:
 
     /** Copying is forbidden */
-    mutex(const mutex & orig) {}
+    mutex(const mutex & orig) {
+        throw std::logic_error("POSIX mutex copying forbidden");
+    }
 
     /** Assignment is forbidden */
-    mutex & operator = (const mutex & orig) {}
+    mutex & operator = (const mutex & orig) {
+        throw std::logic_error("POSIX mutex assignment forbidden");
+    }
 
 };  // end of class mutex
 

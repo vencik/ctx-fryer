@@ -101,7 +101,7 @@ static int parse_test(syxa_t *syxa) {
     for (; i < derivation_len; ++i)
         fprintf(stdout, "%zu ", derivation[i]);
 
-    switch(parser_status) {
+    switch (parser_status) {
         case SA_OK:
             /* Input accepted */
             if (sa_accept(syxa)) {
@@ -145,7 +145,7 @@ static int parse_test(syxa_t *syxa) {
 
     free(derivation);
 
-    /* Evaluate all parse root attributes */
+    /* Evaluate all parse tree root attributes */
     if (0 == status) {
         ptree_node_t *ptree_root = sa_ptree_ro(syxa);
 

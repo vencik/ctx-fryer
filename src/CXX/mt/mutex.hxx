@@ -6,17 +6,21 @@
 
 extern "C" {
 #include <pthread.h>
+#include <time.h>
 }
 
 
 /** \cond */
-// Instance name constructor for (un)lock4scope
+// Instance name constructor for (un)lock4scope and alike
 #define _scopelock_name_impl(base, line_no) base ## line_no
 #define _scopelock_name(base, line_no) _scopelock_name_impl(base, line_no)
 /** \endcond */
 
 /**
  *  \brief  Lock mutex till end of scope
+ *
+ *  The macro instantiates \ref scopelock, so the argument gets locked
+ *  till the scope end.
  *
  *  \param  mutex  Mutex
  */
@@ -25,9 +29,22 @@ extern "C" {
 /**
  *  \brief  Unlock mutex till end of scope
  *
+ *  Similar to \ref lock4scope, but instantiates \ref scopeunlock
+ *  (so that the argument gets unlocked and locked back at scope end).
+ *
  *  \param  mutex  Mutex
  */
 #define unlock4scope(mutex) mt::scopeunlock _scopelock_name(__scope_unlock_, __LINE__)(mutex)
+
+/**
+ *  \brief  Unlock mutex at end of scope
+ *
+ *  Similar to \ref lock4scope, but instantiates \ref deferredunlock
+ *  (so that the argument gets unlocked at scope end).
+ *
+ *  \param  mutex  Mutex
+ */
+#define unlockatend(mutex) mt::deferredunlock _scopelock_name(__deferred_unlock_, __LINE__)(mutex)
 
 
 namespace mt {
@@ -89,6 +106,46 @@ class mutex {
         }
     }
 
+    /**
+     *  \brief  Try to lock mutex (with blocking timeout)
+     *
+     *  The function is similar to \ref trylock, except that it blocks
+     *  the calling thread at most \c timeout seconds while trying to
+     *  obtain the lock.
+     *
+     *  \param  timeout  Timeout (in seconds)
+     *
+     *  \return \c true iff the mutex was locked for caller
+     */
+    inline bool trylock(double timeout) throw(std::logic_error) {
+        struct timespec wake_at;
+
+        // Note that pthread_mutex_timedlock specifies usage of CLOCK_REALTIME
+        int status = clock_gettime(CLOCK_REALTIME, &wake_at);
+
+        if (status)
+            throw std::logic_error("POSIX mutex timeout setting failed");
+
+        time_t sec  = (time_t)timeout;
+        long   nsec = 1000000000 * (timeout - (double)sec);
+
+        wake_at.tv_sec  += sec;
+        wake_at.tv_nsec += nsec;
+
+        status = pthread_mutex_timedlock(&m_impl, &wake_at);
+
+        switch (status) {
+            case 0: return true;
+
+            case ETIMEDOUT:  // timeout
+            case EAGAIN:     // max. num. of recursive locks exceeded
+                return false;
+
+            default:  // ???
+                throw std::logic_error("POSIX mutex timed trylock failed");
+        }
+    }
+
     /** Unlock mutex */
     inline void unlock() throw(std::logic_error) {
         int status = pthread_mutex_unlock(&m_impl);
@@ -125,14 +182,10 @@ class mutex {
     private:
 
     /** Copying is forbidden */
-    mutex(const mutex & orig) {
-        throw std::logic_error("POSIX mutex copying forbidden");
-    }
+    mutex(const mutex & orig) {}
 
     /** Assignment is forbidden */
-    mutex & operator = (const mutex & orig) {
-        throw std::logic_error("POSIX mutex assignment forbidden");
-    }
+    void operator = (const mutex & orig) {}
 
 };  // end of class mutex
 
@@ -187,6 +240,42 @@ class scopeunlock {
     }
 
 };  // end of class scopeunlock
+
+
+/**
+ *  \brief  Unlock mutex at end of scope
+ *
+ *  The class instance destructor unlocks the supplied mutex.
+ *  That may be conveniently used together with \ref mutex::trylock
+ *  operation to automate the mutex unlock on the \c trylock successive
+ *  call in cases such as:
+ *
+ *   if (mx.trylock()) {
+ *       deferredunlock du(mx);
+ *
+ *       // Leaving the scope (in any way) unlocks the mutex
+ *   }
+ *
+ *  The reasoning behind the class is the same as for \ref scopelock.
+ *
+ *  Best use via the \ref unlockatend macro.
+ */
+class deferredunlock {
+    private:
+
+    mutex & m_mutex;  /**< Mutex */
+
+    public:
+
+    /** Constructor (does nothing to the mutex) */
+    deferredunlock(mutex & mutex): m_mutex(mutex) {}
+
+    /** Unlock mutex */
+    ~deferredunlock() {
+        m_mutex.unlock();
+    }
+
+};  // end of class deferredunlock
 
 }  // end of namespace mt
 

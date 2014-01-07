@@ -1,6 +1,8 @@
 #ifndef mt__mutex_hxx
 #define mt__mutex_hxx
 
+#include "config.h"
+
 #include <stdexcept>
 #include <cerrno>
 
@@ -106,6 +108,11 @@ class mutex {
         }
     }
 
+#ifdef HAVE_PTHREAD_MUTEX_TIMEDLOCK
+
+/** \ref mt::mutex::trylock with timeout argument is defined */
+#define HAVE_MT__MUTEX__TRYLOCK_WITH_TIMEOUT 1
+
     /**
      *  \brief  Try to lock mutex (with blocking timeout)
      *
@@ -145,6 +152,8 @@ class mutex {
                 throw std::logic_error("POSIX mutex timed trylock failed");
         }
     }
+
+#endif  // end of #ifdef HAVE_PTHREAD_MUTEX_TIMEDLOCK
 
     /** Unlock mutex */
     inline void unlock() throw(std::logic_error) {

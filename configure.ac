@@ -225,18 +225,19 @@ AM_COND_IF([ENABLE_DOC], [
 ])
 
 # Checks for libraries.
-AC_CHECK_LIB([atomic-ops], [comp_and_swap])
-AC_CHECK_LIB([pthreads],   [pthread_create])
+AC_CHECK_LIB([atomic_ops], [main])
+AC_CHECK_LIB([pthread],    [pthread_create])
 
 # Checks for header files.
-AC_CHECK_HEADERS([])
+AC_CHECK_HEADERS([atomic_ops.h])
+AC_CHECK_HEADERS([pthread.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
 AC_C_INLINE
 
 # Checks for library functions.
-AC_CHECK_FUNCS([])
+AC_CHECK_FUNCS([pthread_mutex_timedlock])
 
 
 # Run configure in run-time support directories

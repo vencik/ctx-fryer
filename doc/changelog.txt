@@ -1,10 +1,100 @@
 CTX Fryer Project Change Log
 ----------------------------
 
-The change log was generated on Sun Aug 11 14:16:51 CEST 2013.
+The change log was generated on Fri Jan 10 10:35:44 CET 2014.
 
 Below, the committed changes appear in reversed order (most recent first).
 
+
+.link:https://github.com/vencik/ctx-fryer/commit/dfe5513e07353041443fe908ebeddda4830fcbd9[C++11 specific code is now an option]
+*******************************************************************************************************************************
+Fri Jan 10 10:27:03 2014 +0100 by 'vencik'
+
+_Hash_: dfe5513e07353041443fe908ebeddda4830fcbd9
+
+ We shall now be C++11 aware.
+ However, C++11 features are, at least for now, optional, _not_ mandatory,
+ so the code should still be compilable by a non-C++11 capable compiler.
+ Also note that GNU C++11 extensions are _not_ used (for portability reasons).
+ 
+ As result, binomial_heap supports moving (via rvalue refs), now.
+*******************************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/8b4c791422ab0c51c107b3e5ac7744c22bfa3c0c[configure: fixed libraries checking]
+******************************************************************************************************************************
+Tue Jan 7 16:11:24 2014 +0100 by 'vencik'
+
+_Hash_: 8b4c791422ab0c51c107b3e5ac7744c22bfa3c0c
+
+ Checking for libpthread and libatomic_ops fixed.
+ Checking for associated header files added.
+ Specific check for pthread_mutex_timedlock added
+ (the function implementation is NOT required by POSIX).
+******************************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/a2e423a5836ad395838af93638e8ad36c9019102[mt::mutex: added timed trylock & deferred unlock]
+*******************************************************************************************************************************************
+Mon Jan 6 17:19:23 2014 +0100 by 'vencik'
+
+_Hash_: a2e423a5836ad395838af93638e8ad36c9019102
+
+ bool mt::mutex::trylock(double ) allows for trying to lock a mutex
+ while blocking the caller up to certain time (based on pthread_mutex_timedlock).
+ mt::deferredunlock class and associated unlockatend macro allow for
+ automation of mutex unlocking at end of scope.
+*******************************************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/1383634a723028ea36e3d24884738be74b540874[RT C support lib: UT code cleanup]
+****************************************************************************************************************************
+Sat Dec 28 09:27:28 2013 +0100 by 'vencik'
+
+_Hash_: 1383634a723028ea36e3d24884738be74b540874
+****************************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/f6579d75be0acca46f20e1f4a76a23e425cc5d05[threadpool: cleanup, debugging & initial UT]
+**************************************************************************************************************************************
+Mon Dec 23 09:22:42 2013 +0100 by 'vencik'
+
+_Hash_: f6579d75be0acca46f20e1f4a76a23e425cc5d05
+
+ Added threadpool UT (1st version, hardly sufficient; however,
+ the TP was debugged using that).
+ Fixed: condition variable timeout computation + usage of monotonic
+ clock
+ Fixed: source file naming scheme cleanup (extensions .[ch]pp -> .[ch]xx,
+ .grammar -> .cfg)
+ Added (inter-thread) mt::semaphore implementation
+**************************************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/c4464d87da2a12eb5402794957c60d11c6618e6c[Fixed binomial heap size update on B_0]
+*********************************************************************************************************************************
+Sun Dec 1 11:19:58 2013 +0100 by 'vencik'
+
+_Hash_: c4464d87da2a12eb5402794957c60d11c6618e6c
+*********************************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/3e454cd68b15e0e3ec2fbecb13cf46fbd999b5e3[Threadpool initial implementation]
+****************************************************************************************************************************
+Thu Nov 28 09:13:04 2013 +0100 by 'vencik'
+
+_Hash_: 3e454cd68b15e0e3ec2fbecb13cf46fbd999b5e3
+
+ Note that the code is NOT debugged, yet
+****************************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/d5aee55f0bdbc725b61e80b3f237e050367b6fa4[container::value_list source documentation]
+*************************************************************************************************************************************
+Thu Sep 5 18:23:23 2013 +0200 by 'vencik'
+
+_Hash_: d5aee55f0bdbc725b61e80b3f237e050367b6fa4
+*************************************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/90a73d373f04c8f148b6cff71cef5f647f531d73[C tlang: support for UT added]
+************************************************************************************************************************
+Wed Aug 14 12:44:55 2013 +0200 by 'vencik'
+
+_Hash_: 90a73d373f04c8f148b6cff71cef5f647f531d73
+************************************************************************************************************************
 
 .link:https://github.com/vencik/ctx-fryer/commit/b337256c6044938e011da00158150b1e562afeb0[Change log added to project documentation]
 ************************************************************************************************************************************

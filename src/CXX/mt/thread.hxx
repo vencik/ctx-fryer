@@ -404,7 +404,8 @@ const void * POSIX_thread::CANCELED = PTHREAD_CANCELED;
  *  defined by the queue:
  *
  *   bool empty();
- *   job pop();
+ *   const job & head();
+ *   void pop();
  *   void push(const job & );
  */
 template <template <class> class queue, class job>
@@ -441,7 +442,9 @@ class threadpool {
         while (!m_shutdown) {
             // Check job queue
             if (!m_job_queue.empty()) {
-                job my_job = m_job_queue.pop();
+                job my_job(m_job_queue.head());
+
+                m_job_queue.pop();
 
                 unlock4scope(m_mutex);
 
@@ -648,6 +651,17 @@ class threadpool {
     }
 
 };  // end of class threadpool
+
+
+/** LIFO queue */
+template <typename T>
+class queue_LIFO: public container::stack<T> {
+    public:
+
+    /** Head item getter */
+    inline const T & head() { return this->top(); }
+
+};  // end of template class queue_LIFO
 
 }  // end of namespace impl
 
@@ -958,7 +972,7 @@ class threadpool_priority: public impl::threadpool<container::pqueue, job> {};
  *  See \ref impl::threadpool for common info.
  */
 template <typename job>
-class threadpool_LIFO: public impl::threadpool<container::stack, job> {};
+class threadpool_LIFO: public impl::threadpool<impl::queue_LIFO, job> {};
 
 }  // end of namespace mt
 

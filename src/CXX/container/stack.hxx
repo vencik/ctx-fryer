@@ -84,18 +84,13 @@ class stack {
      *  \brief  Pop top item from stack
      *
      *  If the stack is empty, an exception is thrown.
-     *  Otherwise, the function returns the stack top item
-     *  and removes it.
-     *
-     *  \return Former top item of the stack
+     *  Otherwise, the function removes the stack top item.
      */
-    inline T pop() throw(std::range_error) {
-        T item;
-
-        if (!pop(item))
+    inline void pop() throw(std::range_error) {
+        if (empty())
             throw std::range_error("pop from an empty stack");
 
-        return item;
+        m_impl.erase(m_impl.begin());
     }
 
     /**

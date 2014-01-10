@@ -298,15 +298,6 @@ class test_job {
 
     public:
 
-    /** Constructor */
-    test_job() {
-        --s_done;
-
-        std::cerr
-            << "Empty test job " << this << " created"
-            << std::endl;
-    }
-
     /**
      *  \brief  Constructor
      *
@@ -357,6 +348,11 @@ class test_job {
 
     /** Wait for all instances destroyed */
     static void wait4all() { s_done.wait(); }
+
+    private:
+
+    /** Assigning is forbidden */
+    void operator = (const test_job & orig) {}
 
 };  // end of class test_job
 

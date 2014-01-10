@@ -87,18 +87,13 @@ class queue {
      *  \brief  Pop head item from queue
      *
      *  If the queue is empty, an exception is thrown.
-     *  Otherwise, the function returns the queue head item
-     *  and removes it.
-     *
-     *  \return Former head item of the queue
+     *  Otherwise, the function removes the queue head item.
      */
-    inline T pop() throw(std::range_error) {
-        T item;
-
-        if (!pop(item))
+    inline void pop() throw(std::range_error) {
+        if (empty())
             throw std::range_error("pop from an empty queue");
 
-        return item;
+        m_impl.erase(m_impl.begin());
     }
 
     /**
@@ -164,18 +159,13 @@ class pqueue {
      *  \brief  Pop head item from queue
      *
      *  If the queue is empty, an exception is thrown.
-     *  Otherwise, the function returns the queue head item
-     *  and removes it.
-     *
-     *  \return Former head item of the queue
+     *  Otherwise, the function removes the queue head item.
      */
-    inline T pop() throw(std::range_error) {
-        T item;
-
-        if (!pop(item))
+    inline void pop() throw(std::range_error) {
+        if (empty())
             throw std::range_error("pop from an empty queue");
 
-        return item;
+        m_impl.delete_min();
     }
 
     /**

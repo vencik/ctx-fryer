@@ -1,7 +1,7 @@
 #ifndef mt__mutex_hxx
 #define mt__mutex_hxx
 
-#include "config.h"
+#include "config.hxx"
 
 #include <stdexcept>
 #include <cerrno>

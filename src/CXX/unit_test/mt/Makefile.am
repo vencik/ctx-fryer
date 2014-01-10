@@ -1,5 +1,5 @@
 # Compiler & linker flags
-AM_CXXFLAGS = -g -Wall -Werror -lpthread -lrt
+AM_CXXFLAGS = -g -Wall -Werror -pthread -lrt
 AM_LDFLAGS  =
 
 # Unit test scripts

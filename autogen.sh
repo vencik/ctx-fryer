@@ -104,7 +104,7 @@ run_libtoolize () {
 
 run_aclocal () {
     log EMPH "Running aclocal to create autoconf macra..."
-    aclocal || quit 3 "aclocal failed"
+    aclocal -I m4 || quit 3 "aclocal failed"
 }
 
 run_autoheader () {
@@ -119,7 +119,7 @@ run_automake () {
 
 run_autoconf () {
     log EMPH "Running autoconf to generate configure script..."
-    autoconf || quit 6 "autoconf failed"
+    autoconf -I m4 || quit 6 "autoconf failed"
 }
 
 

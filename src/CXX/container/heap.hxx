@@ -63,6 +63,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.hxx"
+
 #include <cstdlib>
 #include <cassert>
 #include <stdexcept>
@@ -789,6 +791,39 @@ class binomial_heap {
     }
 
     /**
+     *  \brief  Deep-copy heap
+     *
+     *  \param  orig  Original heap
+     */
+    void copy(const binomial_heap<T> & orig) {
+        // Sanity checks
+        assert(0 == m_size);
+        assert(NULL == m_btrees);
+        assert(NULL == m_min);
+
+        m_size = orig.m_size;
+
+        impl::Btree<T> * btree = orig.m_btrees;
+
+        if (NULL == btree) return;
+
+        // Copy 1st tree
+        m_btrees = m_min = new impl::Btree<T>(btree);
+
+        // Copy the other trees
+        btree = btree->get_next();
+
+        for (; NULL != btree; btree = btree->get_next()) {
+            impl::Btree<T> * copy = new impl::Btree<T>(btree);
+
+            m_btrees->join_list(copy);
+
+            if (orig.m_min == btree)
+                m_min = copy;
+        }
+    }
+
+    /**
      *  \brief  Create heap from tree list
      *
      *  IMPORTANT NOTE:
@@ -828,29 +863,29 @@ class binomial_heap {
      *  \param  orig  Original heap
      */
     binomial_heap(const binomial_heap<T> & orig):
-        m_size(orig.m_size),
+        m_size(0),
         m_btrees(NULL),
         m_min(NULL)
     {
-        impl::Btree<T> * btree = orig.m_btrees;
-
-        if (NULL == btree) return;
-
-        // Copy 1st tree
-        m_btrees = m_min = new impl::Btree<T>(btree);
-
-        // Copy the other trees
-        btree = btree->get_next();
-
-        for (; NULL != btree; btree = btree->get_next()) {
-            impl::Btree<T> * copy = new impl::Btree<T>(btree);
-
-            m_btrees->join_list(copy);
-
-            if (orig.m_min == btree)
-                m_min = copy;
-        }
+        copy(orig);
     }
+
+#ifdef HAVE_CXX11
+    /**
+     *  \brief  Move constructor
+     *
+     *  \param  orig  Original heap
+     */
+    binomial_heap(binomial_heap<T> && orig):
+        m_size(orig.m_size),
+        m_btrees(orig.m_btrees),
+        m_min(orig.m_min)
+    {
+        orig.m_size   = 0;
+        orig.m_btrees = NULL;
+        orig.m_min    = NULL;
+    }
+#endif  // end of #ifdef HAVE_CXX11
 
     /** Check whether the heap is empty */
     inline bool empty() const { return 0 == m_size; }
@@ -1117,12 +1152,8 @@ class binomial_heap {
         delete_item(min);
     }
 
-    /**
-     *  \brief  Destructor
-     *
-     *  Non-empty heap's trees shall be destroyed.
-     */
-    ~binomial_heap() {
+    /** Clear heap */
+    inline void clear() {
         while (NULL != m_btrees) {
             impl::Btree<T> * btree = m_btrees;
 
@@ -1130,7 +1161,50 @@ class binomial_heap {
 
             delete btree;
         }
+
+        m_size = 0;
+        m_min  = NULL;
     }
+
+    /**
+     *  \brief  Assignment
+     *
+     *  \param  orig  Assigned value
+     */
+    inline const binomial_heap<T> & operator = (const binomial_heap<T> & orig) {
+        clear();
+        copy(orig);
+
+        return *this;
+    }
+
+#ifdef HAVE_CXX11
+    /**
+     *  \brief  Rvalue assignment
+     *
+     *  \param  orig  Assigned rvalue
+     */
+    inline const binomial_heap<T> & operator = (binomial_heap<T> && orig) {
+        clear();
+
+        m_size   = orig.m_size;
+        m_btrees = orig.m_btrees;
+        m_min    = orig.m_min;
+
+        orig.m_size   = 0;
+        orig.m_btrees = NULL;
+        orig.m_min    = NULL;
+
+        return *this;
+    }
+#endif  // end of #ifdef HAVE_CXX11
+
+    /**
+     *  \brief  Destructor
+     *
+     *  Non-empty heap's trees shall be destroyed.
+     */
+    ~binomial_heap() { clear(); }
 
 };  // end of template class binomial_heap
 

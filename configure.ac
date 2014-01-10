@@ -6,7 +6,7 @@ AM_INIT_AUTOMAKE
 LT_INIT
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/CXX/container/table.hxx])  # TODO: use generator .cxx when created
-AC_CONFIG_HEADERS([src/CXX/config.h])
+AC_CONFIG_HEADERS([src/CXX/config.hxx])
 AC_PREFIX_DEFAULT([/usr/local])
 
 
@@ -206,8 +206,7 @@ AC_ARG_ENABLE([strip],
         AC_MSG_RESULT([no])
     ])
 
-
-# Checks for programs.
+# Checks for programs
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
@@ -224,19 +223,22 @@ AM_COND_IF([ENABLE_DOC], [
     test -n "${ASCIIDOC}" || AC_MSG_ERROR([AsciiDoc is required for doc build (--disable-doc will help)])
 ])
 
-# Checks for libraries.
+# Checks for libraries
 AC_CHECK_LIB([atomic_ops], [main])
 AC_CHECK_LIB([pthread],    [pthread_create])
 
-# Checks for header files.
+# Checks for header files
 AC_CHECK_HEADERS([atomic_ops.h])
 AC_CHECK_HEADERS([pthread.h])
 
-# Checks for typedefs, structures, and compiler characteristics.
+# Checks for typedefs, structures, and compiler characteristics
 AC_HEADER_STDBOOL
 AC_C_INLINE
 
-# Checks for library functions.
+# We prefer C++11, but (so far) we can live without it
+AX_CXX_COMPILE_STDCXX_11([noext], [optional])
+
+# Checks for library functions
 AC_CHECK_FUNCS([pthread_mutex_timedlock])
 
 

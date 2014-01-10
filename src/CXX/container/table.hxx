@@ -397,7 +397,7 @@ class table {
     }
 
     inline void level_erase(const level_iterator pos) {
-        return m_impl.erase(pos);
+        m_impl.erase(pos);
     }
 
     inline const_iterator begin() const {

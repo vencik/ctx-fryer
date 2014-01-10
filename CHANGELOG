@@ -1,12 +1,38 @@
 CTX Fryer Project Change Log
 ============================
 
-The change log was generated on Fri Jan 10 10:35:44 CET 2014
+The change log was generated on Fri Jan 10 18:47:05 CET 2014
 by the changelog.sh script.
 Below, the committed changes appear in reversed order (most recent first).
 Commit hashes are provided to simplify search for the particular commit;
 just append the hash to the following URL:
 https://github.com/vencik/ctx-fryer/commit/
+
+
+E/F/T grammar example: attributed grammar
+-----------------------------------------
+Date: Fri Jan 10 18:42:07 2014 +0100
+By:   vencik  <vencik@razdva.cz>
+Hash: fb122f773ed5c2caa32ea3e9b51875239cc1c1d3
+
+The E/F/T grammar has been extended by attributes allowing for
+expression evaluation.
+This implied wider changes on the scripting side + augmentation
+of the project def. file syntax (build-related info in the metadata
+section).
+
+TODO: linkage of the generated parser unit test is still broken
+
+
+mt::threadpool: job passing fixed
+---------------------------------
+Date: Fri Jan 10 11:33:11 2014 +0100
+By:   vencik  <vencik@razdva.cz>
+Hash: 1ab9619414d4e077501db8f683817953eb5a1d4e
+
+Job shouldn't be required to have default constructor, nor = operator.
+That's both for efficiency and safety reasons.
+Only copy constructor is required, now.
 
 
 C++11 specific code is now an option

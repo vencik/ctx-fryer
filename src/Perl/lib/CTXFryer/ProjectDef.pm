@@ -53,6 +53,8 @@ use CTXFryer::ProjectDef::UnitTest;
 
 use CTXFryer::Logging qw(:all);
 
+use File::Basename;
+
 
 # Escape sequences
 %escape_chars = (
@@ -116,6 +118,21 @@ sub str2list($$) {
 }
 
 
+# Get absolute path to a file
+sub file2abspath($) {
+    my ($file, $path) = fileparse(shift);
+
+    if ($path eq "." || $path eq "./") {
+        $path = $ENV{PWD};
+    }
+    elsif ($path !~ /^\//) {
+        $path = $ENV{PWD} . "/" . $path;
+    }
+
+    return $path;
+}
+
+
 sub new($@) {
     my $class = shift; $class = ref $class || $class;
 
@@ -135,7 +152,11 @@ sub new($@) {
 
     INFO("Reading project definition from $input_file");
 
-    my $metainfo  = ($skip_metainfo  ? undef : new CTXFryer::ProjectDef::MetaInfo);
+    my $input_file_path = file2abspath($input_file);
+
+    DEBUG("Project definition file resides in $input_file_path");
+
+    my $metainfo  = ($skip_metainfo  ? undef : new CTXFryer::ProjectDef::MetaInfo($input_file_path));
     my $terminals = ($skip_grammar   ? undef : new CTXFryer::ProjectDef::Grammar::TerminalSymbols);
     my $rules     = ($skip_grammar   ? undef : new CTXFryer::ProjectDef::Grammar::Rules);
     my $attrs     = ($skip_grammar   ? undef : new CTXFryer::ProjectDef::Grammar::Attributes);

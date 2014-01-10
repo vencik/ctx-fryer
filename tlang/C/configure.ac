@@ -17,11 +17,37 @@ AC_MSG_CHECKING([for additional include paths])
 AC_ARG_WITH([include],
     AS_HELP_STRING([--with-include], [Set additional include paths (':' separated list)]),
     [   # --with-include specified
-        includes=`echo "${withval}" | sed -e 's/^/-I/' -e 's/:/ -I/g'`
-        CFLAGS="${CFLAGS} ${includes}"
-        AC_MSG_RESULT([${includes}])
+        include=`echo "${withval}" | sed -e 's/^/-I/' -e 's/:/ -I/g'`
+        CFLAGS="${CFLAGS} ${include}"
+        AC_MSG_RESULT([${include}])
     ],
-    [   # --with-optim-level not specified
+    [   # --with-include not specified
+        AC_MSG_RESULT([none])
+    ])
+
+# Set additional library paths
+AC_MSG_CHECKING([for additional library paths])
+AC_ARG_WITH([libpath],
+    AS_HELP_STRING([--with-libpath], [Set additional library paths (':' separated list)]),
+    [   # --with-libpath specified
+        libpath=`echo "${withval}" | sed -e 's/^/-L/' -e 's/:/ -L/g'`
+        LDFLAGS="${LDFLAGS} ${libpath}"
+        AC_MSG_RESULT([${libpath}])
+    ],
+    [   # --with-libpath not specified
+        AC_MSG_RESULT([none])
+    ])
+
+# Set additional libraries to link with
+AC_MSG_CHECKING([for additional libraries])
+AC_ARG_WITH([lib],
+    AS_HELP_STRING([--with-lib], [Link towards additional libraries (',' separated list of lib. names)]),
+    [   # --with-lib specified
+        lib=`echo "${withval}" | sed -e 's/^/-l/' -e 's/,/ -l/g'`
+        LDFLAGS="${LDFLAGS} ${lib}"
+        AC_MSG_RESULT([${lib}])
+    ],
+    [   # --with-lib not specified
         AC_MSG_RESULT([none])
     ])
 

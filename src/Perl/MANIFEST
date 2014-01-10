@@ -4,6 +4,7 @@ Makefile.PL
 ctx-fryer-cfg2parser
 ctx-fryer-cfg2re
 ctx-fryer-cfg2tlang
+ctx-fryer-cfg2tlang-conf
 ctx-fryer-cfg2ut
 ctx-fryer-re2fsa
 lib/CTXFryer.pm

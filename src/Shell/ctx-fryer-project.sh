@@ -13,7 +13,7 @@ ctx_fryer__create_project () {
 
     # Project ID
     project_id=`basename "$project_file"`
-    project_id=`echo "$project_id" | sed -e 's/\.grammar$//'`
+    project_id=`echo "$project_id" | sed -e 's/\.cfg$//'`
 
     # Project directory
     project_dir="$2"
@@ -31,7 +31,7 @@ ctx_fryer__create_project () {
 
     mkdir -p "$project_dir" || FATAL "Failed to create project directory $project_dir"
 
-    cp -s "$project_file" "$project_dir/def_file" || FATAL "Failed to copy project file"
+    cp "$project_file" "$project_dir/def_file" || FATAL "Failed to copy project file"
     project_file="$project_dir/def_file"
 
     tlangs=""
@@ -51,6 +51,11 @@ ctx_fryer__create_project () {
             || FATAL "Failed to create target language directory $tlang_dir"
 
             tlangs="$tlang $tlangs"
+
+            tlang_conf=`ctx-fryer-cfg2tlang-conf "$project_file" "$tlang"`
+
+            DEBUG "Target language $tlang config: $tlang_conf"
+            echo "$tlang_conf" > "$tlang_dir/configure.arg"
         else
             WARN "Sorry, target language $tlang isn't supported (yet)"
 
@@ -112,7 +117,7 @@ tlangs_configure:
 	@for d in $tlangs; do \
 	    if test ! -f \$\$d/.configured -a -x \$\$d/configure; then \
 	        echo "Configuring build in target language directory \$\$d"; \
-	        ( cd \$\$d; ./configure --with-include="${prefix}/include" ) || break; \
+	        ( cd \$\$d; ./configure --with-include="${prefix}/include" \`cat ./configure.arg\` ) || break; \
 	        touch \$\$d/.configured; \
 	        echo "Build in target language directory \$\$d configured"; \
 	    fi \

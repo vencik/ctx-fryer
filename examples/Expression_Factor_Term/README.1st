@@ -1,0 +1,39 @@
+CTX Fryer example README
+========================
+
+Overview
+--------
+
+This _very simple_ example provides a first glance at the generator features.
+In principle, it generates parser for the simple textbook E/F/T CFL and
+binds it with set of custom attribute resolvers, producing a tiny (and quite
+incapable) yet working calculator.
+
+It may serve as a guideline on how to use the generator in your own code.
+Note however, that the example is indeed very simple (to simplify its analysis
+as much as possible).
+A real project should use GNU autotools for example; the example uses very
+dummy hard-coded Makefile (only the example itself, the parser generation
+does use autotools, of course).
+
+Hopefully, much more useful project skeleton shall be created soon.
+
+
+Q&A
+---
+
+*Q:* What do I do with it?
+
+*A:*
+* Copy the entire example directory somewhere.
+* Change into the copied directory
+* Check the example build configuration in Makefile.config
+* run make
+
+
+*Q:* What if it doesn't work?
+
+*A:*
+The project is still very pre-mature, bugs are very likely.
+If it doesn't work, please post bugreport.
+Note however, that you should read the project README first.

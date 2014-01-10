@@ -1,0 +1,7 @@
+##### Configuration #####
+
+# Set ctx-fryer install prefix
+CTX_FRYER_PREFIX = @prefix@
+
+# Set ctx-fryer-c-rt install prefix
+CTX_FRYER_C_RT_PREFIX = $(CTX_FRYER_PREFIX)

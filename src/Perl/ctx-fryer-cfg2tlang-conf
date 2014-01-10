@@ -13,6 +13,8 @@ $CTXFryer::Logging::threshold = "INFO";
 my $project_def = new CTXFryer::ProjectDef($ARGV[0]) || exit(1);
 my $metainfo    = $project_def->metaInfo()           || exit(0);
 
+shift @ARGV;
+
 foreach my $tlang (@ARGV) {
     print(join(" ", $metainfo->targetLanguageConfig($tlang)), "\n");
 }

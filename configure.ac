@@ -267,6 +267,7 @@ fi
 AC_CONFIG_FILES([
     Makefile
     examples/Makefile
+    examples/Expression_Factor_Term/Makefile.config
     src/Makefile
     src/CXX/Makefile
     src/CXX/meta/Makefile

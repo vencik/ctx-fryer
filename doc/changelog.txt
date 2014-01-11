@@ -1,10 +1,54 @@
 CTX Fryer Project Change Log
 ----------------------------
 
-The change log was generated on Fri Jan 10 18:47:05 CET 2014.
+The change log was generated on Sat Jan 11 15:52:31 CET 2014.
 
 Below, the committed changes appear in reversed order (most recent first).
 
+
+.link:https://github.com/vencik/ctx-fryer/commit/088f876a178394d65daa5534cef3fc9beaa23bf0[Added module doc. for C++ code where missing]
+***************************************************************************************************************************************
+Sat Jan 11 15:51:33 2014 +0100 by 'vencik'
+
+_Hash_: 088f876a178394d65daa5534cef3fc9beaa23bf0
+***************************************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/01f9aee6b63b4a941863edd7f2967b30d5adeab4[Project TODO list added]
+******************************************************************************************************************
+Sat Jan 11 11:17:57 2014 +0100 by 'vencik'
+
+_Hash_: 01f9aee6b63b4a941863edd7f2967b30d5adeab4
+
+ There has been work done on several fronts at once, lately, which
+ led to a bit of scattering of ideas and loosing grasp of what
+ was done and what wasn't.
+ I therefore hereby establish the TODO list to help keep track
+ of things that need to wait a bit at the moment.
+ 
+ IMPORTANT NOTE:
+ this doesn't meen at all that commits that break things are accepted.
+ Commits must still be consistent; read the notice in the TODO file itself.
+******************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/fc74a2e87c2be356c578f833ced2878f5e5a63e7[dynamic/pointer.hxx: src file doc. added]
+***********************************************************************************************************************************
+Sat Jan 11 10:33:27 2014 +0100 by 'vencik'
+
+_Hash_: fc74a2e87c2be356c578f833ced2878f5e5a63e7
+
+ File documentation was added.
+ TODO: unique pointer implementation is missing
+***********************************************************************************************************************************
+
+.link:https://github.com/vencik/ctx-fryer/commit/131dc0a3806723407b5e97ecf537702210e4def1[Disabling copy const & assignment simplier]
+*************************************************************************************************************************************
+Sat Jan 11 10:27:10 2014 +0100 by 'vencik'
+
+_Hash_: 131dc0a3806723407b5e97ecf537702210e4def1
+
+ Trashed the logical exceptions; the code is trustworthy
+ enough already.
+*************************************************************************************************************************************
 
 .link:https://github.com/vencik/ctx-fryer/commit/fb122f773ed5c2caa32ea3e9b51875239cc1c1d3[E/F/T grammar example: attributed grammar]
 ************************************************************************************************************************************

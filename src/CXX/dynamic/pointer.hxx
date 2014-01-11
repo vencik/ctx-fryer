@@ -1,6 +1,56 @@
 #ifndef dynamic__pointer_hxx
 #define dynamic__pointer_hxx
 
+/**
+ *  \brief  Smart pointers
+ *
+ *  The module contains template definitions of "smart" pointers,
+ *  i.e. pointers that keep track of certain properties.
+ *
+ *  Two main smart pointers are broadly used:
+ *  * Unique pointer (formerly autopointer)
+ *  * Shared pointer
+ *
+ *  Both these smart poniters keep track of the dynamic object it pointes to
+ *  and ensure both the pointer validity and that the object is destroyed
+ *  when not pointed to any longer.
+ *
+ *  Unique pointer makes sure that as long as the dynamic object lives,
+ *  there's exactly one pointer pointing at it.
+ *  When the valid pointer is destroyed, the object is destroyed, too.
+ *  Unique pointer is beneficial namely in situations when a dynamic
+ *  object has to be valid within a certain scope and then automatically
+ *  destroyed (no matter how and where the scope is left).
+ *
+ *  Shared pointer allows more (shared) pointers to point at an object,
+ *  counting all such references.
+ *  When last of the pointers is destroyed, the object is destroyed, too.
+ *  Shared pointer is practically irreplaceable in situations when an object
+ *  destruction point can't be deterministically set (predicted).
+ *  The object stays valid as long as any entity holds the shared pointer
+ *  that references it (and no longer).
+ *
+ *  \author  Vaclav Krpec  <vencik@razdva.cz>
+ *  \date    2013/10/26
+ *
+ *  Legal notices
+ *
+ *  Copyright 2013 Vaclav Krpec
+ *
+ *  CTX Fryer is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include "mt/atomic.hxx"
 

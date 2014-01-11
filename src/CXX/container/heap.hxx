@@ -45,6 +45,9 @@
  *  * http://en.wikipedia.org/wiki/Priority_queue
  *  * http://en.wikipedia.org/wiki/Hough_transform
  *
+ *  \author  Vaclav Krpec  <vencik@razdva.cz>
+ *  \date    2013/12/01
+ *
  *  Legal notices
  *
  *  Copyright 2013 Vaclav Krpec

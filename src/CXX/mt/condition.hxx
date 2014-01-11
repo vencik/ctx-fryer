@@ -139,14 +139,10 @@ class condition {
     private:
 
     /** Copying is forbidden */
-    condition(const condition & orig) {
-        throw std::logic_error("POSIX condition variable copying forbidden");
-    }
+    condition(const condition & orig) {}
 
     /** Assignment is forbidden */
-    condition & operator = (const condition & orig) {
-        throw std::logic_error("POSIX condition variable assignmant forbidden");
-    }
+    void operator = (const condition & orig) {}
 
 };  // end of class condition
 

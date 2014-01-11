@@ -4,8 +4,6 @@
 #include "mt/mutex.hxx"
 #include "mt/condition.hxx"
 
-#include <stdexcept>
-
 
 namespace mt {
 
@@ -145,14 +143,10 @@ class semaphore {
     private:
 
     /** Copying is forbidden */
-    semaphore(const semaphore & orig) {
-        throw std::logic_error("semaphore copying forbidden");
-    }
+    semaphore(const semaphore & orig) {}
 
     /** Assignment is forbidden */
-    semaphore & operator = (const semaphore & orig) {
-        throw std::logic_error("semaphore assignment forbidden");
-    }
+    void operator = (const semaphore & orig) {}
 
 };  // end of class semaphore
 

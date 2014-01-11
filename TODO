@@ -1,0 +1,48 @@
+CTX Fryer TODO list
+===================
+
+If there's a committed change that implies further work on the same
+or related topic done, it should be either done immediately afterwards
+or put to this very list.
+
+Note that this *doesn't* mean that commits that break things down
+are allowed; commit must always leave the repo consistent.
+However, sometimes a followup to a change is either needed or just
+nice to have, although there's no time for an immediate action.
+In such cases, the issue shall be put here so that it doesn't fall
+into oblivion.
+
+Also note that the list must be kept consistent with the code.
+It should be as short as possible and ideally kept sorted by order
+of the issue importance (most important first).
+
+
+Fix broken C parser automatic unit test linkage
+-----------------------------------------------
+Date: 2014/01/11
+By:   vencik
+
+The E/F/T example extension by grammar attribution now works,
+but the generated parser's UT won't link (-lxattr not found).
+It should be just a Makefile bug, the -L paths are probably
+not well set.
+
+
+dynamic::mempool implementation
+-------------------------------
+Date: 2014/01/11
+By:   vencik
+
+Self-optimised concurrent access general purpose (?) dynamic memory
+cache (aka allocator) shall be needed sooner or later.
+Note that mt::mutex::trylock with timeout is already implemented.
+
+
+dynamic::unique_ptr implementation
+----------------------------------
+Date: 2014/01/11
+By:   vencik
+
+This smart pointer is a very nice to have thing; since dynamic::shared_ptr
+is already implemented, it should not be left without its faithful
+companion... ;-)

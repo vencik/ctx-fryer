@@ -32,6 +32,10 @@ The change log was generated on ${date}.
 
 Below, the committed changes appear in reversed order (most recent first).
 
+
+Changes
+~~~~~~~
+
 HERE
 
 
@@ -69,22 +73,14 @@ BEGIN {
 
     ul = "";
     for (i = 0; i < length(heading); ++i)
-        ul = ul "*";
+        ul = ul "^";
 
-    print "\n." heading "\n*" ul "\n" \
-        $5 " by '\''" $3 "'\''\n\n_Hash_: " $2 \
+    print "\n" heading "\n" ul "\n" \
+        $5 " by '\''" $3 "'\''\n\n_Hash_: " $2 "\n" \
         >> "'${doc_file}'";
 
-    if (length($6)) {
-        text = $6;
-
-        sub("\n$", "", text);
-        gsub("\n", "\n ", text);
-
-        print "\n " text >> "'${doc_file}'";
-    }
-
-    print "*" ul >> "'${doc_file}'";
+    if (length($6))
+        print "----\n" $6 "----\n" >> "'${doc_file}'";
 }
 '
 

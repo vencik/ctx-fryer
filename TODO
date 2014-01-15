@@ -17,30 +17,6 @@ It should be as short as possible and ideally kept sorted by order
 of the issue importance (most important first).
 
 
-Fix broken C parser automatic unit test linkage
------------------------------------------------
-Date: 2014/01/11
-By:   vencik
-
-The E/F/T example extension by grammar attribution now works,
-but the generated parser's UT won't link (-lxattr not found).
-It should be just a Makefile bug, the -L paths are probably
-not well set.
-
-Update: 2014/01/13
-By:     vencik
-
-Indeed, -L paths are one relative level off since the UT
-is in the unit_test sub-directory, moreover, if installed
-to a custom location, PATH, LD_LIBRARY_PATH and PERL5LIB
-need to be set accordingly.
-The parser configure script should adapt the supplied config.
-arguments for the UT and the environment should be set somewhere.
-Perhaps turning test.sh into test.sh.in...?
-Btw, the script doesn't have 755 permissions; shall also be fixed
-in tlang/Makefile.am (shall become <path>_SCRIPTS target).
-
-
 dynamic::mempool implementation
 -------------------------------
 Date: 2014/01/11

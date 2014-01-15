@@ -17,7 +17,8 @@ use constant TLANG_CONFIG_SCOPE => 3;
 sub new($@) {
     my $class = shift; $class = ref $class || $class;
 
-    my $reference_path = shift || $ENV{PWD};
+    my $def_path = shift || $ENV{PWD};
+    my $pwd_path = shift || $ENV{PWD};
 
     my $this = {
         label        => undef,
@@ -27,7 +28,8 @@ sub new($@) {
         tlang_config => {},
         tlang        => undef,
         scope        => META_SCOPE,
-        ref_path     => $reference_path,
+        def_path     => $def_path,
+        pwd_path     => $pwd_path,
     };
 
     return bless($this, $class);
@@ -79,9 +81,6 @@ sub targetLanguageConfig($@) {
 
 sub parse($$$) {
     my ($this, $line, $pos) = @_;
-
-    # Quote formal placeholders substitutions for regexs
-    my $pwd = quotemeta($this->{ref_path});
 
     my $ret   = 0;
     my $scope = $this->{scope};
@@ -158,10 +157,16 @@ sub parse($$$) {
         my @conf = grep($_, split(/\s+/, $line));
 
         # Formal placeholders substitutions
+        my $def_path = $this->{def_path};
+        my $pwd_path = $this->{pwd_path};
+
         foreach (@conf) {
-            s/\$PWD(\W)/$pwd$1/g;
-            s/\$PWD$/$pwd/;
-            s/\$\{PWD\}/$pwd/g;
+            s/\$PWD(\W)/$pwd_path$1/g;
+            s/\$PWD$/$pwd_path/;
+            s/\$\{PWD\}/$pwd_path/g;
+            s/\$DEF_PATH(\W)/$def_path$1/g;
+            s/\$DEF_PATH$/$def_path/;
+            s/\$\{DEF_PATH\}/$def_path/g;
         }
 
         push(@{$this->{tlang_config}->{$tlang}}, @conf);

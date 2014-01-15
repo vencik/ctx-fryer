@@ -120,7 +120,9 @@ sub str2list($$) {
 
 # Get absolute path to a file
 sub file2abspath($) {
-    my ($file, $path) = fileparse(shift);
+    my $arg = shift;
+
+    my ($file, $path) = fileparse($arg);
 
     if ($path eq "." || $path eq "./") {
         $path = $ENV{PWD};
@@ -129,7 +131,30 @@ sub file2abspath($) {
         $path = $ENV{PWD} . "/" . $path;
     }
 
-    return $path;
+    return wantarray ? ($path, $file) : $path;
+}
+
+
+# Get absolute path to a file with symlink resolution
+sub file2abspath_readlink($) {
+    my $arg = shift;
+
+    my ($path, $file) = file2abspath($arg);
+
+    if (-l $arg) {
+        my $link_path;
+
+        ($file, $link_path) = fileparse(readlink($arg));
+
+        if ($link_path =~ /^\//) {
+            $path = $link_path;
+        }
+        else {
+            $path .= '/' . $link_path;
+        }
+    }
+
+    return wantarray ? ($path, $file) : $path;
 }
 
 
@@ -152,7 +177,7 @@ sub new($@) {
 
     INFO("Reading project definition from $input_file");
 
-    my $input_file_path = file2abspath($input_file);
+    my $input_file_path = file2abspath_readlink($input_file);
 
     DEBUG("Project definition file resides in $input_file_path");
 

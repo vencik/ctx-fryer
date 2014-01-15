@@ -22,7 +22,7 @@ CALC_LDLIB = $(CTX_FRYER_LDLIB):./parser/C/.libs:.
 
 #.PHONY: parser
 
-all: envcheck parser calc check notice
+all: envcheck parser-lib calc check notice
 
 calc: calc.o parser
 	$(CC) -L. -L./parser/C/.libs -o $@ $< -lxattr -lparser -lctx-fryer-c-rt
@@ -30,10 +30,11 @@ calc: calc.o parser
 calc.o: calc.c
 	$(CC) -c -o $@ $<
 
-parser: Expression_Factor_Term.cfg libxattr.so
-	$(CTX_FRYER_PATH) $(CTX_FRYER_LDLIB) $(CTX_FRYER_PERLLIB) ctx-fryer cpro $< $@
-	$(CTX_FRYER_PATH) $(CTX_FRYER_LDLIB) $(CTX_FRYER_PERLLIB) $(MAKE) --directory $@
-	$(CTX_FRYER_PATH) $(CTX_FRYER_LDLIB) $(CTX_FRYER_PERLLIB) $(MAKE) --directory $@ check
+parser-lib: Expression_Factor_Term.cfg libxattr.so
+	$(RM) parser
+	$(CTX_FRYER_PATH) $(CTX_FRYER_LDLIB) $(CTX_FRYER_PERLLIB) ctx-fryer cpro $< parser
+	$(CTX_FRYER_PATH) $(CTX_FRYER_LDLIB) $(CTX_FRYER_PERLLIB) $(MAKE) --directory parser
+	$(CTX_FRYER_PATH) $(CTX_FRYER_LDLIB):${PWD} $(CTX_FRYER_PERLLIB) $(MAKE) --directory parser check
 
 libxattr.so: xattr.o
 	$(CC) -shared -o $@ $^

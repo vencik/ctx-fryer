@@ -107,7 +107,7 @@ tlangs_prepare:
 	@for d in $tlangs; do \
 	    if test ! -f \$\$d/.prepared -a -f \$\$d/prepare.sh; then \
 	        echo "Preparing build in target language directory \$\$d"; \
-	        ( cd \$\$d; sh ./prepare.sh ) || break; \
+	        ( cd \$\$d; sh ./prepare.sh ) || exit \$\$?; \
 	        touch \$\$d/.prepared; \
 	        echo "Build in target language directory \$\$d prepared"; \
 	    fi \
@@ -117,7 +117,7 @@ tlangs_configure:
 	@for d in $tlangs; do \
 	    if test ! -f \$\$d/.configured -a -x \$\$d/configure; then \
 	        echo "Configuring build in target language directory \$\$d"; \
-	        ( cd \$\$d; ./configure --with-include="${prefix}/include" \`cat ./configure.arg\` ) || break; \
+	        ( cd \$\$d; ./configure --with-include="${prefix}/include" \`cat ./configure.arg\` ) || exit \$\$?; \
 	        touch \$\$d/.configured; \
 	        echo "Build in target language directory \$\$d configured"; \
 	    fi \
@@ -131,21 +131,21 @@ check: code tlangs_check
 tlangs_check:
 	@for d in $tlangs; do \
 	    echo "Checking build in target language directory \$\$d"; \
-	    \$(MAKE) --directory=\$\$d check || break; \
+	    \$(MAKE) --directory=\$\$d check || exit \$\$?; \
 	    echo "Build in target language directory \$\$d checked"; \
 	done
 
 tlangs_clean:
 	@for d in $tlangs; do \
 	    echo "Cleaning build in target language directory \$\$d"; \
-	    \$(MAKE) --directory=\$\$d clean || break; \
+	    \$(MAKE) --directory=\$\$d clean || exit \$\$?; \
 	    echo "Build in target language directory \$\$d clean"; \
 	done
 
 tlangs_purge:
 	@for d in $tlangs; do \
 	    echo "Purging build in target language directory \$\$d"; \
-	    \$(MAKE) --directory=\$\$d purge || break; \
+	    \$(MAKE) --directory=\$\$d purge || exit \$\$?; \
 	    \$(rm) \$\$d/.prepared \$\$d/.configured; \
 	    echo "Build in target language directory \$\$d purged"; \
 	done

@@ -27,11 +27,10 @@ cache (aka allocator) shall be needed sooner or later.
 Note that mt::mutex::trylock with timeout is already implemented.
 
 
-dynamic::unique_ptr implementation
-----------------------------------
-Date: 2014/01/11
+dynamic::shared_ptr UT
+----------------------
+Date: 2014/01/15
 By:   vencik
 
-This smart pointer is a very nice to have thing; since dynamic::shared_ptr
-is already implemented, it should not be left without its faithful
-companion... ;-)
+dynamic::shared_ptr has no UT so far.
+Naturally, it should be tested in MT environment.

@@ -54,8 +54,126 @@
 
 #include "mt/atomic.hxx"
 
+#include <stdexcept>
+
 
 namespace dynamic {
+
+/**
+ *  \brief  Unique pointer
+ *
+ *  Pointer to dynamic object that ensures that throughout the object life,
+ *  exactly one pointer is pointing to it.
+ *  Copy constructor and assignment operator invalidate the original.
+ *  When instance holding the object is destroyed, the object itself
+ *  is destroyed, too.
+ *
+ *  Note that this implementation allows conversion back to ordinary
+ *  pointer.
+ *  However, that is _highly_ discouraged.
+ *  Our general strategy is permissive, though.
+ *
+ *  IMPORTANT NOTE:
+ *  The implementation IS NOT thread safe.
+ *  Typical usage of the unique pointer doesn't require it.
+ *  However, if thread safeness is required, it should best be implemented
+ *  using atomic operations (see \ref mt/atomic.hxx).
+ *
+ *  For more info, see http://en.wikipedia.org/wiki/Smart_pointer
+ */
+template <typename T>
+class unique_ptr {
+    private:
+
+    T * m_impl;  /**< Implementation */
+
+    public:
+
+    /**
+     *  \brief  Constructor
+     *
+     *  Note that (unlike \ref dynamic::shared_ptr), construction
+     *  of invalid unique pointer is allowed.
+     *
+     *  \param  ptr  Dynamic object pointer
+     */
+    unique_ptr(T * ptr = NULL): m_impl(ptr) {}
+
+    /**
+     *  \brief  Copy constructor
+     *
+     *  \param  orig  Copied pointer (shall be invalidated)
+     */
+    unique_ptr(unique_ptr & orig): m_impl(orig.m_impl) { orig.m_impl = NULL; }
+
+    /** Validity check */
+    inline bool valid() const { return NULL != m_impl; }
+
+    /** Release of the object (if any) */
+    inline void free() {
+        if (NULL != m_impl)
+            delete m_impl;
+    }
+
+    /**
+     *  \brief  Assignment of ordinary pointer
+     *
+     *  \param  ptr  Assignment source (shall be invalidated)
+     *
+     *  \return Left value
+     */
+    inline unique_ptr & operator = (T * & ptr) {
+        free();
+
+        m_impl = ptr;
+        ptr    = NULL;
+
+        return *this;
+    }
+
+    /**
+     *  \brief  Assignment
+     *
+     *  \param  orig  Assignment source (shall be invalidated)
+     *
+     *  \return Left value
+     */
+    inline unique_ptr & operator = (unique_ptr & orig) {
+        return *this = orig.m_impl;
+    }
+
+    /** Conversion to ordinary pointer */
+    inline operator T * () const { return m_impl; }
+
+    /**
+     *  \brief  Dereference
+     *
+     *  The function throws an exception if the pointer is invalid.
+     */
+    inline T & operator * () const throw(std::runtime_error) {
+        if (NULL == m_impl)
+            throw std::runtime_error("invalid unique pointer dereference");
+
+        return *m_impl;
+    }
+
+    /**
+     *  \brief  Underlaying object access
+     *
+     *  The function throws an exception if the pointer is invalid.
+     */
+    inline T * operator -> () const throw(std::runtime_error) {
+        if (NULL == m_impl)
+            throw std::runtime_error("access via invalid unique pointer");
+
+        return m_impl;
+    }
+
+    /** Destructor */
+    ~unique_ptr() { free(); }
+
+};  // end of class unique_ptr
+
 
 /**
  *  \brief  Shared pointer
@@ -81,8 +199,11 @@ class shared_ptr {
         T *            obj_ptr;  /**< Shared object pointer */
         mt::atomic_int ref_cnt;  /**< Reference counter     */
 
-        /** Constructor */
-        impl(T * ptr): obj_ptr(ptr), ref_cnt(1) {}
+        /** Constructor (only valid pointers are accepted) */
+        impl(T * ptr): obj_ptr(ptr), ref_cnt(1) {
+            if (NULL == obj_ptr)
+                throw std::logic_error("invalid shared pointer");
+        }
 
     };  // end of struct impl
 
@@ -107,7 +228,13 @@ class shared_ptr {
 
     public:
 
-    /** Constructor of 1st instance */
+    /**
+     *  \brief  Constructor of 1st instance
+     *
+     *  Note that only valid pointer is accepted.
+     *  The constructor will throw an exception if \c NULL pointer
+     *  is passed to it.
+     */
     shared_ptr(T * ptr): m_impl(new impl(ptr)) {}
 
     /** Copy constructor */
@@ -118,7 +245,7 @@ class shared_ptr {
     }
 
     /** Assignment */
-    shared_ptr & operator = (const shared_ptr & rval) {
+    inline shared_ptr & operator = (const shared_ptr & rval) {
         dec_ref_cnt();
 
         m_impl = rval.m_impl;
@@ -141,10 +268,14 @@ class shared_ptr {
      *  private.
      *  This implementation is permissive... ;-)
      */
-    inline T & operator * () { return *(m_impl->obj_ptr); }
+    inline T & operator * () const { return *(m_impl->obj_ptr); }
 
-    /** Dereference */
-    inline T * operator -> () { return m_impl->obj_ptr; }
+    /**
+     *  \brief  Dereference
+     *
+     *  The function throws an exception if the pointer is invalid.
+     */
+    inline T * operator -> () const { return m_impl->obj_ptr; }
 
     private:
 

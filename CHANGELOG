@@ -1,12 +1,49 @@
 CTX Fryer Project Change Log
 ============================
 
-The change log was generated on Sat Jan 11 15:52:31 CET 2014
+The change log was generated on Wed Jan 15 12:10:18 CET 2014
 by the changelog.sh script.
 Below, the committed changes appear in reversed order (most recent first).
 Commit hashes are provided to simplify search for the particular commit;
 just append the hash to the following URL:
 https://github.com/vencik/ctx-fryer/commit/
+
+
+changelog.sh: HTML output formatting fixed
+------------------------------------------
+Date: Wed Jan 15 12:05:16 2014 +0100
+By:   vencik  <vencik@razdva.cz>
+Hash: ef34fdc044463e7647becf905ee8e459352ed0b0
+
+Simple indentation by one space weas not enough to prevent
+unwanted effects of characters (or sequences of characters)
+that have special meaning in asciidoc.
+
+The HTML representation was therefore changed to prevent that:
+* preformatted blocks are used for the descriptions
+* Boxes were replaced by 4-th level sections
+  (not to use box nesting)
+
+
+C target language UT linkage bug fixed
+--------------------------------------
+Date: Wed Jan 15 11:00:56 2014 +0100
+By:   vencik  <vencik@razdva.cz>
+Hash: 7b449dc9839709043361b1138e9afad9a7ddce2a
+
+Changes included:
+* debugging of (the prototype) def. file metadata parser
+  (formal placeholders substitutions)
+* Proper make error propagation in the generated code
+* Environment settings fixed
+* UT script permissions fixed
+
+
+tlang::C: generated parser UT linkage bug analysis
+--------------------------------------------------
+Date: Mon Jan 13 19:19:46 2014 +0100
+By:   vencik  <vencik@razdva.cz>
+Hash: 2854e051ed51fa9886d9c5e7d42a22a5e925a8a0
 
 
 Added module doc. for C++ code where missing

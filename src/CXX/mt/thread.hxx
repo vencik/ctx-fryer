@@ -40,6 +40,7 @@
 #include <climits>
 
 extern "C" {
+#include <unistd.h>
 #include <pthread.h>
 }
 

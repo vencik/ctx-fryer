@@ -31,6 +31,10 @@
 #include <cstdlib>
 #include <ctime>
 
+extern "C" {
+#include <unistd.h>
+}
+
 
 /** Job script */
 class job_script {

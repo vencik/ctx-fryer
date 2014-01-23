@@ -372,7 +372,7 @@ static char *segment_use_data(segment_t *seg) {
     seg->state = SEG_IN_USE;
     ++seg->use_cnt;
 
-    DEBUX("Segment %p is now used %zu times", seg, seg->use_cnt);
+    DEBUX("Segment %p is now used %u times", seg, seg->use_cnt);
 
     return seg->data;
 }
@@ -392,7 +392,7 @@ static void segment_drop_data(segment_t *seg) {
 
     --seg->use_cnt;
 
-    DEBUX("Segment %p is now used %zu times", seg, seg->use_cnt);
+    DEBUX("Segment %p is now used %u times", seg, seg->use_cnt);
 
     if (0 == seg->use_cnt) seg->state = SEG_RELEASED;
 }

@@ -228,8 +228,15 @@ AC_CHECK_LIB([atomic_ops], [main])
 AC_CHECK_LIB([pthread],    [pthread_create])
 
 # Checks for header files
-AC_CHECK_HEADERS([atomic_ops.h])
-AC_CHECK_HEADERS([pthread.h])
+AC_CHECK_HEADERS([atomic_ops.h], [],
+    [   # atomic_ops.h not found
+        AC_MSG_ERROR([atomic_ops.h not found, please install libatomic-ops-dev])
+    ])
+
+AC_CHECK_HEADERS([pthread.h], [],
+    [   # pthread.h not found
+        AC_MSG_ERROR([pthread.h not found, please install libc6-dev])
+    ])
 
 # Checks for typedefs, structures, and compiler characteristics
 AC_HEADER_STDBOOL

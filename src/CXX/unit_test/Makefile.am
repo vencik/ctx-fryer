@@ -1,4 +1,3 @@
 SUBDIRS = \
     container \
-    dynamic \
     mt

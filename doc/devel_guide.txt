@@ -1,0 +1,237 @@
+CTX Fryer: Developer's Guide
+============================
+
+:numbered:
+
+
+Disclaimer
+----------
+
+This guide is targeted at the project developers.
+Of course, the project is a "by devels for devels" thing, so in fact,
+all the docs audience are developers... ;-)
+
+So, this document is for those who wish to develop ctx-fryer itself.
+
+
+Introduction
+------------
+
+From developer's point of view, the CTX Fryer project consists of the generator
+itself and set of parser run-time support libraries (per each target language).
+
+The generator is written in C++ and the code is licensed under terms of GNU GPL v3
+or later, making it Free Software.
+
+The run-time support libraries are written in the target language, naturally.
+They may be licensed by various licenses; e.g. the C RT-libs are available
+under the terms of GNU LGPL v3 or later (see further discussion on the subject
+below).
+The RT-libs supply the code needed to operate over the parser tables; the generator
+only produces language-specific parsing tables; the RT libs are general.
+There may however be small amount of "glue code" generated for grammar
+attributes evaluators and destructors.
+
+
+Generator
+~~~~~~~~~
+
+The generator functionally consists of 2 parts:
+
+. Lexical analyser (LA) compiler
+. Syntax analyser (SA) (with grammar attributes evaluator) compiler
+
+
+Lexical analyser compiler
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The LA compiler takes set of lexical items specifications in form of list of
+link:http://en.wikipedia.org/wiki/Regular_Expression[regular expressions]
+and produces minimal union of their transforms to
+link:http://en.wikipedia.org/wiki/Finite_State_Automaton[finite-state automata (FSA)].
+The union is augmented so that its accepting states also bear information
+on the original regular language(s), thus identifying the lexical item.
+
+The FSA is produced in form of
+link:http://en.wikipedia.org/wiki/Directed_graph[directed graph].
+The LA uses it to segment the input into lexical items as follows:
+
+. When there is a request for another lexical item to be parsed,
+  go to initial state
+. If a state is an accepting state, add the language(s) it accepts to list of
+  available lexical items on input (including position info etc).
+. The FSA edges represent read operations of single characters from the input.
+  Each branch has a non-empty set of characters assigned.
+  Depending on the next character on input, choose appropriate branch for
+  state transition, read the character out and continue with step 2.
+  If there's no suitable branch, the segmentation run ends.
+
+Note that the lexical segmentation may be implemented either as greedy (read as
+far as possible) or lazy, on the contrary (only read so far so a lexical item
+gets available).
+The latter is perhaps preferable; LA should be considered as a slave of
+the SA, which requests lexical items.
+It may do so in a lazy loop, i.e. request some and if satisfied, go on without
+enforcing potentially unnecessary parsing).
+On the other hand, some languages syntax analysis might prefer the longest
+lexical items (e.g. correct resolution of C operators like `=` and `==` requires
+sort of greedy approach).
+
+NOTE: At this point, you may observe that the SA might actually alter the way
+the input is segmented.
+If indeed a shorter lexical item suffices, it may be accepted; however,
+if it doesn't, the SA may ask the LA to read on.
+Therefore, on different syntax levels, the lexical analysis may behave
+differently.
+This propagation of syntax-level logic to lexical segmentation may be highly
+useful.
+
+Interruption of the input segmentation into lexical items (either because of
+the lazy mode or because the input is exhausted at the time) only means to
+remember context info (current state + the accept states visited so far);
+continuation is a simple matter.
+Most importantly, note that these behavioural differences are _independent_
+on the LA FSA definition; this is all implemented on the RT-support libs side
+(as noted above, the production is _data_, not code, so no a priori functional
+restrictions and/or imperatives are, in fact, possible).
+
+
+Syntax analyser compiler
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The SA compiler follows the standard algorithm for LALR(1) SA construction:
+
+* Create LR0 SA action & goto tables (see below)
+* If there are no conflicts in the action table, it's done
+* Compute the Look-Ahead-1 (LA(1)) sets (see below)
+* Remove actions that violate the LA(1) sets
+* If there are still some conflicts remaining, the grammar isn't LALR(1)
+
+Syntax analyser (as defined in the Theory of Formal Languages and Automata)
+is merely a deterministic machine that decides whether a "word" belongs to
+a "language".
+By "word", we understand a finite sequence of lexical items.
+In general, the analyser identifies sequence of grammar rules that need
+to be applied to produce the word (if it indeed belongs to the language).
+That sequence is called "derivation".
+
+Parser is a practical application of a SA that not only checks that the input
+syntax is correct, but also either constructs "parse tree" (a physical
+representation of the derivation) or, in case of immediate interpreters,
+triggers execution some actions directly (immediate interpreters are quite
+rare, though).
+More specifically, since LR SA performs bottom-up analysis of the word,
+a parser built using LR SA builds parse tree from leaves to root (or executes
+actions from bottom to top level).
+
+The notion of creation of the parse tree and/or execution of certain actions
+on application of the grammar rules may be generalised (and unified) by
+attribute evaluation.
+
+Grammar symbols may be assigned a set of attributes.
+There are two kinds of attributes: aggregated and inherited.
+An aggregated attribute is evaluated based on 0 or more attributes of symbols
+at the same or lower level in the parse tree.
+An inherited attribute is evaluated based on 1 or more attributes of the symbol
+one level higher in the parse tree.
+In short, attribute aggregation propagates information bottom-up attribute
+inheritance top-to-bottom in the parse tree.
+
+Attributes evaluation on itself requires creation of evaluation dependencies
+trees.
+Each attribute depends on 0 or more other attributes.
+Obviously, the structure must not contain loops.
+
+
+LR(0) SA construction
++++++++++++++++++++++
+
+General overview on LR parsing can be found
+link:http://en.wikipedia.org/wiki/LR(0)[here].
+
+LR(0) syntax analyser is based on an automaton that doesn't require to decide
+its future state by looking ahead for the next lexical item on the input.
+The analyser always knows whether the next action is lexical item shift (read)
+or reduction by a grammar rule.
+In the first case, either the next lexical item is the expected one or there is
+a syntax error (in other words, there are no shift-reduce collisions).
+In the second, exactly one rule applies (there are no reduce-reduce collisions).
+
+TODO: simplified algorithm
+
+Look-Ahead sets computation
++++++++++++++++++++++++++++
+
+If creation of the LR(0) automaton ends up producing collisions,
+it is necessary to perform LALR analysis to get rid of them
+(i.e. to construct correct Look Ahead (LA) sets for the automaton
+states) to elliminate the collisions.
+
+Exhaustive information on the matter is available in
+link:http://3e8.org/pub/scheme/doc/parsing/Efficient%20Computation%20of%20LALR(1)%20Look-Ahead%20Sets.pdf[Efficient Computation of LALR(1) Look-Ahead Sets]
+by Frank DeRemer & Thomas Pennello (the former being the father of practical application
+of Donald Knuth's general LR parsing theory).
+
+TODO: simplified algorithm
+
+
+Grammar attributes evaluator construction
++++++++++++++++++++++++++++++++++++++++++
+
+On the parser compile time, table of attributes of each symbol is constructed,
+together with associated evaluation dependencies for each attribute evaluated
+in each grammar rule context.
+
+The dependency tree may be created during parsing (i.e. by the RT support libs),
+meaning that dependency links are resolved (with no asymptotic impact
+on complexity).
+Attribute evaluation itself, however, should best be done on-demand only when
+an attribute is requested.
+This has 2 reasons:
+
+. The evaluation might be costly and, at the same time, unnecessary
+. Since we do LR (bottom-up) parsing, inherited attributes evaluation
+  may not be possible during parsing (due missing dependencies)
+
+The on-demand approach allows both for avoiding unnecessary computation
+and, if required, evaluation of attributes before parsing is finished
+(if possible).
+
+
+Run-time support libraries
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For each target language, there should be a (set of) library(ies) to provide
+run-time operation over the generated parser code.
+
+The RT-libs license scheme is not a priori defined; there may be different
+licenses used based on any number of reasons, including (non-exhaustively):
+
+* Proliferation of the target language
+* Availability of parser generators for that particular target language
+* Attractivness of the target language (for parser implementation)
+* Portability of the code
+
+An open-source license is generally preferred for the RT-libs.
+
+It is then a matter of due consideration of the copyleft notion choice;
+e.g. for C and C++ languages, weak copyleft appears to be much advisable
+choice since proprietary projects may easily use other generators without
+inconvenient restrictions on license (the project goal is, as for any
+link:http://en.wikipedia.org/wiki/Free_and_Open_Source_Software[FOSS],
+to be 'used').
+For other languages, however, the license scheme is not a priori decided
+and shall always be chosen based on discussion and conventions used
+in the particular area.
+The project founder inclines to using permissive licenses.
+
+
+Packaging notes
+---------------
+
+The obvious packaging scheme is to package the generator separately from
+the run-time support libraries.
+Note that examples provided with the generator require the RT-support libs
+to work; an ideal packaging scheme should probably keep those in separate
+packages, too, with dependency on the generator and the RT-support package
+required.

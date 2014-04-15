@@ -3,23 +3,11 @@ CTX Fryer
 // Web page meta data.
 :keywords:    parser, generator, compiler, interpreter, XML, XSLT, regex, CFG, CFL, LALR(1)
 :description: CTX fryer project aim is to create (yet another) generator of context-free +
-              languages (CFL) parsers. The label is a pun, implicating that the software    +
+              languages (CFL) parsers. The label is a pun, implicating that the software +
               should be as easily and highly usable and as sturdy as a titanium pan.
 
+include::news.txt[]
 
-.{revdate}: ctx-fryer {revnumber} not released, yet ;-)
-************************************************************************
-The project is in early stage of development.
-Documentation is mostly missing; please consider this web _under construction_.
-
-See link:https://github.com/vencik/ctx-fryer[https://github.com/vencik/ctx-fryer] for the code.
-
-TODO: Some actual info, do-not-miss etc comes here.
-
-link:changelog.html[CHANGELOG]
-
-'Vaclav Krpec'
-************************************************************************
 
 Introduction
 ------------
@@ -83,12 +71,36 @@ no copying if possible).
 - shell (scripting)
 - possibly others (target code)
 
-[[X7]]
-=== References
+
+Development
+-----------
+
+The project is still at the beginning.
+The prototype works, but there's lot to do, and not only in the meaning of
+re-implementing it in C++.
+
+If you'd like to become the project developer or to contribute to it in any
+other way, please send an introduction to the project founder:
+*vencik{nbsp}(at){nbsp}razdva{nbsp}(dot){nbsp}cz*.
+
+link:devel_guide.html[Developer's Guide] is already available, although it is
+still (and probably forever) under construction and so far, it only provides
+quite brief info.
+
+The prototype is not much documented, though the code is mostly
+self-explanatory.
+The re-implementation as well as the RT-libs are (or will be) well-documented
+(and that is one of the highest priorities).
+
+
+Changelog
+~~~~~~~~~
+
+The link:changelog.html[changelog] is automatically generated from SCM (git) history.
+
+
+References
+~~~~~~~~~~
 - link:http://en.wikipedia.org/wiki/Regular_expression[Regular expression]
 - link:http://en.wikipedia.org/wiki/LALR_parser[LALR parser]
 - link:http://en.wikipedia.org/wiki/Attribute_grammar[Attribute grammar]
-
-Sub-section ???
-~~~~~~~~~~~~~~~
-TODO

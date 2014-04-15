@@ -1,0 +1,20 @@
+#toc {
+    overflow-x: hidden;  /* hide TOC horizontal scrollbar */
+    background-color: #f8f8f8;
+}
+
+/*
+ * TOC entries are plain except the one with mouse focus, which is underlined.
+ * Link click is visual in form of temporary disappearance of the underline.
+ */
+#toc a {
+    color: black;
+    text-decoration: none;
+}
+#toc a:hover {
+    text-decoration: underline;
+}
+#toc a:active {
+    text-decoration: underline;
+    text-decoration: none;
+}

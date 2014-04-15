@@ -1,0 +1,9 @@
+.{revdate}: ctx-fryer {revnumber} not released, yet ;-)
+************************************************************************
+The project is in early stage of development.
+Documentation is mostly missing; please consider this web _under construction_.
+
+See link:https://github.com/vencik/ctx-fryer[https://github.com/vencik/ctx-fryer] for the code.
+
+'Václav Krpec'
+************************************************************************

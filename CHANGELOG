@@ -1,12 +1,67 @@
 CTX Fryer Project Change Log
 ============================
 
-The change log was generated on Wed Jan 15 12:10:18 CET 2014
+The change log was generated on Tue 15 Apr 15:47:55 CEST 2014
 by the changelog.sh script.
 Below, the committed changes appear in reversed order (most recent first).
 Commit hashes are provided to simplify search for the particular commit;
 just append the hash to the following URL:
 https://github.com/vencik/ctx-fryer/commit/
+
+
+Fixed missing required header file detection
+--------------------------------------------
+Date: Thu Jan 23 12:14:54 2014 +0100
+By:   vencik  <vencik@razdva.cz>
+Hash: ee2e5471040a27e29eaabb9f353227edf6e8e8e5
+
+An error is reported by configure script if a required
+header file is missing (the bug was found upon migration
+to a new devel. machine, HP libatomic-ops-dev was not installed).
+
+
+dynamic::unique_ptr UT restored from backup
+-------------------------------------------
+Date: Thu Jan 23 11:53:10 2014 +0100
+By:   vencik  <vencik@razdva.cz>
+Hash: efb3fdbceabaf008e2b34d7fe17320cd86856354
+
+
+Bugs detected while switching to 64bit arch. fixed
+--------------------------------------------------
+Date: Thu Jan 23 11:24:03 2014 +0100
+By:   vencik  <vencik@razdva.cz>
+Hash: 050f800394b7d5db70718ed4000ffcc9f1ae9af3
+
+A few small bugs, mostly in UTs fixed:
+* Format string for unsigned int in C LA UT
+* Inclusion if unistd.h for sysconf and getopt in mt/thread.hxx
+  and its UT
+
+
+dynamic::unique_ptr unit test lost
+----------------------------------
+Date: Thu Jan 23 10:16:58 2014 +0100
+By:   vencik  <vencik@razdva.cz>
+Hash: 0c8132c99b69b41197797fd76b2f41fd94a51545
+
+Unfortunatelly, I've lost dynamic::unique_ptr unit test due problems
+with my laptop.
+I should be able, however, to renew it from backup.
+For now, I disable it for sake of consistency.
+
+Piggybacked: apparently, some Makefile.in generated files got into
+the repo.
+Removed.
+
+
+dynamic::unique_ptr implementation & UT
+---------------------------------------
+Date: Wed Jan 15 23:08:53 2014 +0100
+By:   vencik  <vencik@razdva.cz>
+Hash: 9d1923208ad99ff2ce4bb043ba6aa81375402c71
+
+Also fixed a few marginal issues in dynamic::shared_ptr code.
 
 
 changelog.sh: HTML output formatting fixed

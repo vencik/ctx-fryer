@@ -25,16 +25,12 @@ HERE
 
 # Change log (for project documentation) preamble
 cat > ${doc_file} <<HERE
-CTX Fryer Project Change Log
-----------------------------
+Change Log
+----------
 
 The change log was generated on ${date}.
 
 Below, the committed changes appear in reversed order (most recent first).
-
-
-Changes
-~~~~~~~
 
 HERE
 
@@ -73,7 +69,7 @@ BEGIN {
 
     ul = "";
     for (i = 0; i < length(heading); ++i)
-        ul = ul "^";
+        ul = ul "~";
 
     print "\n" heading "\n" ul "\n" \
         $5 " by '\''" $3 "'\''\n\n_Hash_: " $2 "\n" \

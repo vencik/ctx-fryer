@@ -18,7 +18,8 @@ make check || exit $?
 cat <<HERE
 
 ------------------------------------------------------------------------------
-The package was built successfully
+Built successfully
+
 Proceed with installation by running "make install"
 You might need to use sudo or switch to root if doing system-wide installation
 ------------------------------------------------------------------------------

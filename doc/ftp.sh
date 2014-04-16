@@ -183,7 +183,7 @@ put_all_under() {
 }
 
 
-batch=""
+batch="bin\n"
 
 for dir in `echo $root | sed -e 's/\// /g'`; do
     batch="${batch}mkdir $dir\ncd $dir\n"

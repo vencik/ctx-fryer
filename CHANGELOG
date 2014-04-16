@@ -1,12 +1,50 @@
 CTX Fryer Project Change Log
 ============================
 
-The change log was generated on Tue 15 Apr 15:52:20 CEST 2014
+The change log was generated on Wed 16 Apr 10:16:15 CEST 2014
 by the changelog.sh script.
 Below, the committed changes appear in reversed order (most recent first).
 Commit hashes are provided to simplify search for the particular commit;
 just append the hash to the following URL:
 https://github.com/vencik/ctx-fryer/commit/
+
+
+Minor output formatting changes
+-------------------------------
+Date: Wed Apr 16 10:11:13 2014 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 4c9d2de08ae0b1367f74fbc668e466353662fbe6
+
+changelog.sh: adapted generation of changelog for documentation
+to better fit the web.
+
+build.sh: final notice updated.
+
+
+doc/ftp.sh: always use binary TX mode
+-------------------------------------
+Date: Wed Apr 16 09:49:59 2014 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: 5bd5ec7571bddc56f9a26e22c6d793c42a3c9b88
+
+Dear FTP,
+
+please never mangle my files.
+I like them exacly as they are.
+
+Sincerely
+
+vencik
+
+
+Project web improved
+--------------------
+Date: Tue Apr 15 16:53:05 2014 +0200
+By:   vencik  <vencik@razdva.cz>
+Hash: c4006d9020a695da4e1aa071817834f159d717d7
+
+Added styles, icons & TOC
+Added devel. guide draft (incomplete)
 
 
 Fixed missing required header file detection

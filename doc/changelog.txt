@@ -1,9 +1,53 @@
 Change Log
 ----------
 
-The change log was generated on Tue 15 Apr 15:52:20 CEST 2014.
+The change log was generated on Wed 16 Apr 10:16:15 CEST 2014.
 
 Below, the committed changes appear in reversed order (most recent first).
+
+
+link:https://github.com/vencik/ctx-fryer/commit/4c9d2de08ae0b1367f74fbc668e466353662fbe6[Minor output formatting changes]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Wed Apr 16 10:11:13 2014 +0200 by 'vencik'
+
+_Hash_: 4c9d2de08ae0b1367f74fbc668e466353662fbe6
+
+----
+changelog.sh: adapted generation of changelog for documentation
+to better fit the web.
+
+build.sh: final notice updated.
+----
+
+
+link:https://github.com/vencik/ctx-fryer/commit/5bd5ec7571bddc56f9a26e22c6d793c42a3c9b88[doc/ftp.sh: always use binary TX mode]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Wed Apr 16 09:49:59 2014 +0200 by 'vencik'
+
+_Hash_: 5bd5ec7571bddc56f9a26e22c6d793c42a3c9b88
+
+----
+Dear FTP,
+
+please never mangle my files.
+I like them exacly as they are.
+
+Sincerely
+
+vencik
+----
+
+
+link:https://github.com/vencik/ctx-fryer/commit/c4006d9020a695da4e1aa071817834f159d717d7[Project web improved]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tue Apr 15 16:53:05 2014 +0200 by 'vencik'
+
+_Hash_: c4006d9020a695da4e1aa071817834f159d717d7
+
+----
+Added styles, icons & TOC
+Added devel. guide draft (incomplete)
+----
 
 
 link:https://github.com/vencik/ctx-fryer/commit/ee2e5471040a27e29eaabb9f353227edf6e8e8e5[Fixed missing required header file detection]

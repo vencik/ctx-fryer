@@ -3,6 +3,7 @@
 AC_PREREQ([2.68])
 AC_INIT([ctx-fryer], [0.1.0], [ctx-fryer@lopucha.net])
 AM_INIT_AUTOMAKE
+AM_SILENT_RULES([yes])
 LT_INIT
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/CXX/container/table.hxx])  # TODO: use generator .cxx when created
@@ -221,7 +222,15 @@ AM_COND_IF([ENABLE_GENERATOR_PROTOTYPE], [
 AM_COND_IF([ENABLE_DOC], [
     AC_PATH_PROG([ASCIIDOC], [asciidoc], [])
     test -n "${ASCIIDOC}" || AC_MSG_ERROR([AsciiDoc is required for doc build (--disable-doc will help)])
+
+    AC_PATH_PROG([A2X], [a2x], [])
+    if test -n "${A2X}"; then
+        enable_doc_pub=true
+    else
+        AC_MSG_WARN([a2x not found; printable docs will not be built])
+    fi
 ])
+AM_CONDITIONAL([ENABLE_DOC_PUB], [test x$enable_doc_pub = xtrue])
 
 # Checks for libraries
 AC_CHECK_LIB([atomic_ops], [main])
@@ -281,9 +290,11 @@ AC_CONFIG_FILES([
     src/CXX/dynamic/Makefile
     src/CXX/container/Makefile
     src/CXX/mt/Makefile
+    src/CXX/stats/Makefile
     src/CXX/unit_test/Makefile
     src/CXX/unit_test/container/Makefile
     src/CXX/unit_test/dynamic/Makefile
+    src/CXX/unit_test/meta/Makefile
     src/CXX/unit_test/mt/Makefile
     src/Shell/Makefile
     src/Shell/ctx-fryer-paths.sh

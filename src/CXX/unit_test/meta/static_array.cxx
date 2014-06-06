@@ -63,7 +63,7 @@ int test_static_array() {
 }
 
 
-/** Smart pointers unit test */
+/** Unit test */
 int main_impl(int argc, char * const argv[]) {
     int exit_code = 0;
 
@@ -75,7 +75,7 @@ int main_impl(int argc, char * const argv[]) {
     return 0;  // all tests passed
 }
 
-/** Exception-safeness wrapper */
+/** Exception-safety wrapper */
 int main(int argc, char * const argv[]) {
     int exit_code = 127;  // exception caught
 

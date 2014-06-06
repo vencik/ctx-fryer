@@ -67,6 +67,11 @@ class base {
     /**
      *  \brief  Compile-time initialised array
      *
+     *  The array is initialised via the \c F meta-functor on compile-time.
+     *  The functor is a template type that for any template argument \c N
+     *  defines (an enum with) value named \c value.
+     *  \c F<N>::value shall be stored in the array at index \c N.
+     *
      *  \tparam  T  Base type
      *  \tparam  N  Array size
      *  \tparam  F  Initialisation meta-functor

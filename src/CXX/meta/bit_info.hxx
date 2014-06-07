@@ -126,9 +126,21 @@ class bit_info {
         return unpack(s_impl[byte], 0, 4);
     }
 
+    /** Get set bits count */
+    inline static unsigned set_cnt(uint16_t word) {
+        return
+            set_cnt((unsigned char)(word >> 8)) +
+            set_cnt((unsigned char)(word));
+    }
+
     /** Get clear bits count */
     inline static unsigned clear_cnt(unsigned char byte) {
-        return set_cnt(~byte);
+        return set_cnt((unsigned char)(~byte));
+    }
+
+    /** Get clear bits count */
+    inline static unsigned clear_cnt(uint16_t word) {
+        return set_cnt((uint16_t)(~word));
     }
 
     /**
@@ -143,6 +155,21 @@ class bit_info {
     }
 
     /**
+     *  \brief  Get least-significant set bit offset
+     *
+     *  Note that the position is 0-based.
+     *  Return value of 16 means that there are no set bits
+     *  (i.e. \c word == 0).
+     */
+    inline static unsigned ls1b_off(uint16_t word) {
+        unsigned off = ls1b_off((unsigned char)word);
+
+        if (off < 8) return off;
+
+        return ls1b_off((unsigned char)(word >> 8)) + 8;
+    }
+
+    /**
      *  \brief  Get most-significant set bit offset
      *
      *  Note that the position is 0-based.
@@ -151,6 +178,23 @@ class bit_info {
      */
     inline static unsigned ms1b_off(unsigned char byte) {
         return unpack(s_impl[byte], 8, 4);
+    }
+
+    /**
+     *  \brief  Get most-significant set bit offset
+     *
+     *  Note that the position is 0-based.
+     *  Return value of 16 means that there are no set bits
+     *  (i.e. \c byte == 0).
+     */
+    inline static unsigned ms1b_off(uint16_t word) {
+        unsigned off = ms1b_off((unsigned char)(word >> 8));
+
+        if (off < 8) return off + 8;
+
+        off = ms1b_off((unsigned char)word);
+
+        return off < 8 ? off : 16;
     }
 
 };  // end of class bit_info

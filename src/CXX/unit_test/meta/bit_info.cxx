@@ -25,89 +25,144 @@
 #include "meta/bit_info.hxx"
 
 #include <iostream>
+#include <string>
+
+
+// Uncomment (or add -DDEBUG_LOG g++ option) to get log
+//#define DEBUG_LOG
+
+
+/** Unit test implementation call */
+#define TEST(what, type) test_ ## what<type>(#type)
 
 
 /** \ref meta::bit_info::set_cnt unit test */
-int test_set_cnt() {
-    for (unsigned i = 0; i < 256; ++i) {
+template <typename T>
+int test_set_cnt(const std::string & type) {
+    for (T i = 0; ; ++i) {
         unsigned n = 0;
 
-        for (unsigned char mask = 0x1; mask; mask <<= 1)
-            n += !!((unsigned char)i & mask);
+        for (T mask = 0x1; mask; mask <<= 1)
+            n += !!(i & mask);
 
-        if (n != meta::bit_info::set_cnt(i)) {
+        unsigned N = meta::bit_info::set_cnt(i);
+
+        if (n != N) {
             std::cerr
-                << "meta::bit_info::set_cnt(" << i << ") == "
-                << meta::bit_info::set_cnt(i) << ", expected "
+                << "meta::bit_info::set_cnt((" << type << ")"
+                << (unsigned)i << ") == " << N << ", expected "
                 << n << std::endl;
 
             return 1;
         }
+
+#ifdef DEBUG_LOG
+        std::cout
+            << "meta::bit_info::set_cnt((" << type << ")"
+            << (unsigned)i << ") == " << N << std::endl;
+#endif
+
+        if (i == (T)-1) break;
     }
 
     return 0;
 }
 
 /** \ref meta::bit_info::clear_cnt unit test */
-int test_clear_cnt() {
-    for (unsigned i = 0; i < 256; ++i) {
+template <typename T>
+int test_clear_cnt(const std::string & type) {
+    for (T i = 0; ; ++i) {
         unsigned n = 0;
 
-        for (unsigned char mask = 0x1; mask; mask <<= 1)
-            n += !((unsigned char)i & mask);
+        for (T mask = 0x1; mask; mask <<= 1)
+            n += !(i & mask);
 
-        if (n != meta::bit_info::clear_cnt(i)) {
+        unsigned N = meta::bit_info::clear_cnt(i);
+
+        if (n != N) {
             std::cerr
-                << "meta::bit_info::clear_cnt(" << i << ") == "
-                << meta::bit_info::clear_cnt(i) << ", expected "
+                << "meta::bit_info::clear_cnt((" << type << ")"
+                << (unsigned)i << ") == " << N << ", expected "
                 << n << std::endl;
 
             return 1;
         }
+
+#ifdef DEBUG_LOG
+        std::cout
+            << "meta::bit_info::clear_cnt((" << type << ")"
+            << (unsigned)i << ") == " << N << std::endl;
+#endif
+
+        if (i == (T)-1) break;
     }
 
     return 0;
 }
 
 /** \ref meta::bit_info::ls1b_off unit test */
-int test_ls1b_off() {
-    for (unsigned i = 0; i < 256; ++i) {
+template <typename T>
+int test_ls1b_off(const std::string & type) {
+    for (T i = 0; ; ++i) {
         unsigned off = 0;
 
-        for (unsigned char mask = 0x1; mask; mask <<= 1, ++off)
-            if ((unsigned char)i & mask) break;
+        for (T mask = 0x1; mask; mask <<= 1, ++off)
+            if (i & mask) break;
 
-        if (off != meta::bit_info::ls1b_off(i)) {
+        unsigned OFF = meta::bit_info::ls1b_off(i);
+
+        if (off != OFF) {
             std::cerr
-                << "meta::bit_info::ls1b_off(" << i << ") == "
-                << meta::bit_info::ls1b_off(i) << ", expected "
+                << "meta::bit_info::ls1b_off((" << type << ")"
+                << (unsigned)i << ") == " << OFF << ", expected "
                 << off << std::endl;
 
             return 1;
         }
+
+#ifdef DEBUG_LOG
+        std::cout
+            << "meta::bit_info::ls1b_off((" << type << ")"
+            << (unsigned)i << ") == " << OFF << std::endl;
+#endif
+
+        if (i == (T)-1) break;
     }
 
     return 0;
 }
 
 /** \ref meta::bit_info::ms1b_off unit test */
-int test_ms1b_off() {
-    for (unsigned i = 0; i < 256; ++i) {
-        unsigned off = 8;
+template <typename T>
+int test_ms1b_off(const std::string & type) {
+    unsigned bit_cnt = sizeof(T) * 8;
 
-        for (unsigned char mask = 0x80; mask; mask >>= 1, --off)
-            if ((unsigned char)i & mask) break;
+    for (T i = 0; ; ++i) {
+        unsigned off = bit_cnt;
 
-        off = off ? off - 1 : 8;
+        for (T mask = 0x1 << (bit_cnt - 1); mask; mask >>= 1, --off)
+            if (i & mask) break;
 
-        if (off != meta::bit_info::ms1b_off(i)) {
+        off = off ? off - 1 : bit_cnt;
+
+        unsigned OFF = meta::bit_info::ms1b_off(i);
+
+        if (off != OFF) {
             std::cerr
-                << "meta::bit_info::ms1b_off(" << i << ") == "
-                << meta::bit_info::ms1b_off(i) << ", expected "
+                << "meta::bit_info::ms1b_off((" << type << ")"
+                << (unsigned)i << ") == " << OFF << ", expected "
                 << off << std::endl;
 
             return 1;
         }
+
+#ifdef DEBUG_LOG
+        std::cout
+            << "meta::bit_info::ms1b_off((" << type << ")"
+            << (unsigned)i << ") == " << OFF << std::endl;
+#endif
+
+        if (i == (T)-1) break;
     }
 
     return 0;
@@ -118,16 +173,28 @@ int test_ms1b_off() {
 int main_impl(int argc, char * const argv[]) {
     int exit_code = 0;
 
-    exit_code = test_set_cnt();
+    exit_code = TEST(set_cnt, unsigned char);
     if (0 != exit_code) return exit_code;
 
-    exit_code = test_clear_cnt();
+    exit_code = TEST(set_cnt, uint16_t);
     if (0 != exit_code) return exit_code;
 
-    exit_code = test_ls1b_off();
+    exit_code = TEST(clear_cnt, unsigned char);
     if (0 != exit_code) return exit_code;
 
-    exit_code = test_ms1b_off();
+    exit_code = TEST(clear_cnt, uint16_t);
+    if (0 != exit_code) return exit_code;
+
+    exit_code = TEST(ls1b_off, unsigned char);
+    if (0 != exit_code) return exit_code;
+
+    exit_code = TEST(ls1b_off, uint16_t);
+    if (0 != exit_code) return exit_code;
+
+    exit_code = TEST(ms1b_off, unsigned char);
+    if (0 != exit_code) return exit_code;
+
+    exit_code = TEST(ms1b_off, uint16_t);
     if (0 != exit_code) return exit_code;
 
     return 0;  // all tests passed

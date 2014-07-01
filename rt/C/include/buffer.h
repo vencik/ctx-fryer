@@ -139,7 +139,7 @@ struct buffer {
  *  \return Buffer reference counter after the operation
  */
 #define buffer_unref(buffer) \
-    (--(buffer)->ref_cnt ? : buffer_destroy(buffer), (buffer) = NULL, 0)
+    (--(buffer)->ref_cnt ? : (buffer_destroy(buffer), (buffer) = NULL, 0))
 
 
 /**

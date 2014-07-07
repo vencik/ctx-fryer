@@ -250,6 +250,7 @@ AC_CHECK_HEADERS([pthread.h], [],
 # Checks for typedefs, structures, and compiler characteristics
 AC_HEADER_STDBOOL
 AC_C_INLINE
+AC_C_BIGENDIAN
 
 # We prefer C++11, but (so far) we can live without it
 AX_CXX_COMPILE_STDCXX_11([noext], [optional])
@@ -291,6 +292,7 @@ AC_CONFIG_FILES([
     src/CXX/container/Makefile
     src/CXX/mt/Makefile
     src/CXX/stats/Makefile
+    src/CXX/sys/Makefile
     src/CXX/unit_test/Makefile
     src/CXX/unit_test/container/Makefile
     src/CXX/unit_test/dynamic/Makefile

@@ -3,6 +3,7 @@
 AC_PREREQ([2.68])
 AC_INIT([ctx-fryer-C-rt], [0.1.0], [ctx-fryer@lopucha.net])
 AM_INIT_AUTOMAKE
+AM_SILENT_RULES([yes])
 LT_INIT
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/syntax_analyser.c])

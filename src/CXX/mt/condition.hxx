@@ -31,6 +31,7 @@
  */
 
 #include "mt/mutex.hxx"
+#include "sys/time.hxx"
 
 #include <stdexcept>
 #include <cerrno>
@@ -92,20 +93,9 @@ class condition {
      *  \return \c false if timeout expired or interrupted on signal
      */
     inline bool wait(mutex & mx, double timeout) throw(std::logic_error) {
-        struct timespec wake_at;
+        sys::timer wake_at; wake_at.set(timeout);
 
-        int status = clock_gettime(CLOCK_MONOTONIC, &wake_at);
-
-        if (status)
-            throw std::logic_error("POSIX condition timeout setting failed");
-
-        time_t sec  = (time_t)timeout;
-        long   nsec = 1000000000 * (timeout - (double)sec);
-
-        wake_at.tv_sec  += sec;
-        wake_at.tv_nsec += nsec;
-
-        status = pthread_cond_timedwait(&m_impl, &mx.m_impl, &wake_at);
+        int status = pthread_cond_timedwait(&m_impl, &mx.m_impl, wake_at);
 
         switch (status) {
             case 0: return true;

@@ -28,29 +28,67 @@
  */
 
 
-#include "ctime"
+#include <stdexcept>
+#include <ctime>
+#include <cstring>
 
 
 namespace sys {
 
 /** Ticking clock */
 class timer {
+    public:
+
+    /** Used clock */
+    enum clock_t {
+        monotonic = CLOCK_MONOTONIC,  /**< Monotonic clock */
+        realtime  = CLOCK_REALTIME,   /**< Realtime  clock */
+    };
+
     private:
 
+    const clock_t   m_clock;  /**< Used clock */
     struct timespec m_stamp;  /**< Time stamp */
 
     inline void gettime(struct timespec & now) throw(std::runtime_error) {
-        if (clock_gettime(CLOCK_MONOTONIC, &now))
+        if (clock_gettime(m_clock, &now))
             throw std::runtime_error(
-                "sys::timer: failed to get monotonic time");
+                "sys::timer: failed to get time");
     }
 
     public:
 
+    /**
+     *  \brief  Constructor
+     *
+     *  \param  clock  Used clock
+     */
+    timer(clock_t clock = monotonic): m_clock(clock) {}
+
+    /** Copy constructor */
+    timer(const timer & orig): m_clock(orig.m_clock) {
+        ::memcpy(&m_stamp, &orig.m_stamp, sizeof(m_stamp));
+    }
+
     /** Start timer */
     inline void start() { gettime(m_stamp); }
 
-    /** Get time */
+    /**
+     *  \brief  Set time (for timeouts)
+     *
+     *  \param  diff  Time difference from now in seconds
+     */
+    inline void set(double diff) {
+        time_t sec  = (time_t)diff;
+        long   nsec = 1000000000 * (diff - (double)sec);
+
+        start();
+
+        m_stamp.tv_sec  += sec;
+        m_stamp.tv_nsec += nsec;
+    }
+
+    /** Get elapsed time */
     inline double elapsed() {
         struct timespec now; gettime(now);
 
@@ -59,6 +97,9 @@ class timer {
 
         return sec;
     }
+
+    /** \c struct \c timespec getter (for system operations) */
+    inline operator const struct timespec * () { return &m_stamp; }
 
 };  // end of class timer
 

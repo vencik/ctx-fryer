@@ -32,8 +32,11 @@
 
 #include "config.hxx"
 
+#include "sys/time.hxx"
+
 #include <stdexcept>
 #include <cerrno>
+#include <cstring>
 
 extern "C" {
 #include <pthread.h>
@@ -153,25 +156,47 @@ class mutex {
      *
      *  \return \c true iff the mutex was locked for caller
      */
-    inline bool trylock(double timeout) throw(std::logic_error) {
-        struct timespec wake_at;
-
+    bool trylock(double timeout) throw(std::logic_error) {
         // Note that pthread_mutex_timedlock specifies usage of CLOCK_REALTIME
-        int status = clock_gettime(CLOCK_REALTIME, &wake_at);
+        sys::timer wake_at(sys::timer::realtime); wake_at.set(timeout);
 
-        if (status)
-            throw std::logic_error("POSIX mutex timeout setting failed");
-
-        time_t sec  = (time_t)timeout;
-        long   nsec = 1000000000 * (timeout - (double)sec);
-
-        wake_at.tv_sec  += sec;
-        wake_at.tv_nsec += nsec;
-
-        status = pthread_mutex_timedlock(&m_impl, &wake_at);
+        int status = pthread_mutex_timedlock(&m_impl, wake_at);
 
         switch (status) {
             case 0: return true;
+
+            case ETIMEDOUT:  // timeout
+            case EAGAIN:     // max. num. of recursive locks exceeded
+                return false;
+
+            default:  // ???
+                throw std::logic_error("POSIX mutex timed trylock failed");
+        }
+    }
+
+    /**
+     *  \brief  Try to lock mutex (with blocking timeout)
+     *
+     *  The function works just like \ref trylock with timeout,
+     *  except that upon successful acquisition of the lock,
+     *  it provides the time the locking took via the last argument.
+     *
+     *  \param  timeout    Timeout (in seconds)
+     *  \param  lock_time  Time required for the lock acquisition
+     *
+     *  \return \c true iff the mutex was locked for caller
+     */
+    bool trylock(double timeout, double & lock_time) throw(std::logic_error) {
+        // Note that pthread_mutex_timedlock specifies usage of CLOCK_REALTIME
+        sys::timer wake_at(sys::timer::realtime); wake_at.set(timeout);
+
+        int status = pthread_mutex_timedlock(&m_impl, wake_at);
+
+        switch (status) {
+            case 0:  // compute lock acquisition time
+                lock_time = timeout + wake_at.elapsed();
+
+                return true;
 
             case ETIMEDOUT:  // timeout
             case EAGAIN:     // max. num. of recursive locks exceeded

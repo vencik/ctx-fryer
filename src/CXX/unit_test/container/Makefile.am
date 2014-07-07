@@ -1,29 +1,34 @@
 # Compiler & linker flags
-AM_CXXFLAGS = -g -Wall -Werror
+AM_CXXFLAGS = -g -Wall -Werror -O0
 AM_LDFLAGS  =
 
 # Unit test scripts
 TESTS = \
     value_list.sh \
     table.sh \
-    binomial_heap.sh
+    binomial_heap.sh \
+    trie.sh
 
 
 # Unit test programs
 check_PROGRAMS = \
-    value_list \
-    table \
+    binomial_heap \
     randnums \
-    binomial_heap
+    table \
+    trie \
+    value_list
 
-value_list_SOURCES = \
-    value_list.cxx
-
-table_SOURCES = \
-    table.cxx
+binomial_heap_SOURCES = \
+    binomial_heap.cxx
 
 randnums_SOURCES = \
     randnums.cxx
 
-binomial_heap_SOURCES = \
-    binomial_heap.cxx
+table_SOURCES = \
+    table.cxx
+
+trie_SOURCES = \
+    trie.cxx
+
+value_list_SOURCES = \
+    value_list.cxx

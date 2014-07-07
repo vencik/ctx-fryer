@@ -83,9 +83,10 @@ If you'd like to become the project developer or to contribute to it in any
 other way, please send an introduction to the project founder:
 *vencik{nbsp}(at){nbsp}razdva{nbsp}(dot){nbsp}cz*.
 
-link:devel_guide.html[Developer's Guide] is already available, although it is
+link:devel_guide.html[*Developer's Guide*] is already available, although it is
 still (and probably forever) under construction and so far, it only provides
 quite brief info.
+The guide is also available as link:pub/devel_guide.pdf[*PDF*].
 
 The prototype is not much documented, though the code is mostly
 self-explanatory.

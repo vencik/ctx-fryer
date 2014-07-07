@@ -14,6 +14,7 @@ htmlcssdir = $(htmldocdir)/$(html_css_dir)
 htmljsdir  = $(htmldocdir)/$(html_js_dir)
 htmlimgdir = $(htmldocdir)/$(html_img_dir)
 htmlicodir = $(htmldocdir)/$(html_ico_dir)
+htmlpubdir = $(htmldocdir)/pub
 
 htmldoc_DATA = \
     changelog.html \
@@ -45,6 +46,11 @@ htmlico_DATA = \
     $(html_ico_dir)/up.png \
     $(html_ico_dir)/warning.png
 
+if ENABLE_DOC_PUB
+htmlpub_DATA = \
+    devel_guide.pdf
+endif
+
 .txt.html:
 	$(ASCIIDOC) \
 	    -a revdate="`date '+%d %B %Y'`" \
@@ -61,6 +67,14 @@ htmlico_DATA = \
 	    -a theme=ctx-fryer \
 	    -a stylesheet=ctx-fryer-toc.css \
 	    -o $@ $<
+
+.txt.pdf:
+	$(A2X) \
+	    -a revdate="`date '+%d %B %Y'`" \
+	    -a revnumber="$(PACKAGE_VERSION)" \
+	    -d article \
+	    -f pdf \
+	    --asciidoc-opts="-o $@" $<
 
 clean-local:
 	-rm *.html

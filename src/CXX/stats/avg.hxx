@@ -49,11 +49,11 @@ class avg_fwin {
 
     typedef std::vector<T> window_t;  /**< Floating window type */
 
-    window_t m_win;   /**< FLoating window             */
+    window_t m_win;   /**< Floating window             */
     T        m_sum;   /**< Current values sum          */
     size_t   m_vcnt;  /**< Count of valid window cells */
 
-    window_t::iterator m_pos;  /**< Current window position */
+    typename window_t::iterator m_pos;  /**< Current window position */
 
     public:
 
@@ -72,6 +72,22 @@ class avg_fwin {
 
         m_win.reserve(n);
         m_pos = m_win.begin();
+    }
+
+    /** Copy constructor */
+    avg_fwin(const avg_fwin & orig):
+        m_win(orig.m_win),
+        m_sum(orig.m_sum),
+        m_vcnt(orig.m_vcnt),
+        m_pos(m_win.begin() + (orig.m_pos - orig.m_win.begin()))
+    {}
+
+    /** Assignment */
+    inline avg_fwin & operator = (const avg_fwin & orig) {
+        m_win  = orig.m_win;
+        m_sum  = orig.m_sum;
+        m_vcnt = orig.m_vcnt;
+        m_pos  = m_win.begin() + (orig.m_pos - orig.m_win.begin());
     }
 
 #ifdef HAVE_CXX11
@@ -139,14 +155,6 @@ class avg_fwin {
 
     /** Valid values count getter */
     inline size_t valid_cnt() const { return m_vcnt; }
-
-    private:
-
-    /** Copying is forbidden */
-    avg_fwin(const avg_fwin & orig) {}
-
-    /** Assignment is forbidden */
-    void operator = (const avg_fwin & orig) {}
 
 };  // end of template class avg_fwin
 

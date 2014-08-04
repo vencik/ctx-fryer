@@ -4,12 +4,19 @@ AM_LDFLAGS  =
 
 # Unit test scripts
 TESTS = \
-    pointer.sh
+    pointer.sh \
+    mempool.sh
 
 
 # Unit test programs
 check_PROGRAMS = \
+    mempool \
     pointer
+
+mempool_SOURCES = \
+    mempool.cxx
 
 pointer_SOURCES = \
     pointer.cxx
+
+LDADD = ../../libctx-fryer.la

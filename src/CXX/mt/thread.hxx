@@ -697,31 +697,42 @@ class queue_LIFO: public container::stack<T> {
  *  \brief  Thread
  *
  *  The \c Routine template parameter should be a functor with
- *  parentheses operator accepting 2 arguments: the thread reference
- *  and another implementation-specific argument of type \c Routine::arg_t \c &
+ *  parentheses operator accepting the thread reference as an argument
  *  and returns \c int as the thread exit code.
+ *  The type must define \c Routine::arg_t type for the routine
+ *  argument.
+ *  The argument is passed by value upon thread construction and stored
+ *  in the thread object, where it's available for the routine instance
+ *  via a \c thread method.
  */
 template <class Routine>
 class thread {
     public:
 
     enum status_t {
-        STATUS_FAILED = -1,  /**< Thread failed to start */
-        STATUS_INIT   =  0,  /**< Thread was initialised */
-        STATUS_RUN,          /**< Thread routine runs    */
-        STATUS_DONE,         /**< Thread has finished    */
-        STATUS_DETACHED      /**< Thread is detached     */
+        STATUS_FAILED  = -1,  /**< Thread failed to start */
+        STATUS_INIT    =  0,  /**< Thread was initialised */
+        STATUS_RUN,           /**< Thread routine runs    */
+        STATUS_DONE,          /**< Thread has finished    */
+        STATUS_DETACHED       /**< Thread is detached     */
     };  // end of enum status_t
 
     private:
 
-    pthread_t     m_impl;    /**< POSIX thread             */
-    status_t      m_status;  /**< Thread status            */
-    int           m_xcode;   /**< Thread routine exit code */
-    mutable mutex m_mutex;   /**< Operation mutex          */
-    condition     m_st_ch;   /**< Status change condition  */
+    pthread_t               m_impl;    /**< POSIX thread             */
+    typename Routine::arg_t m_rarg;    /**< Routine argument         */
+    status_t                m_status;  /**< Thread status            */
+    int                     m_xcode;   /**< Thread routine exit code */
+    mutable mutex           m_mutex;   /**< Operation mutex          */
+    condition               m_st_ch;   /**< Status change condition  */
 
     public:
+
+    /** Thread id */
+    unsigned long id() const { return (unsigned int)m_impl; }
+
+    /** Routine argument getter */
+    typename Routine::arg_t & routine_argument() { return m_rarg; }
 
     /**
      *  \brief  Terminate thread
@@ -777,15 +788,13 @@ class thread {
         {   // Routine instance life is limited to this block
             Routine routine;
 
-            xcode = routine(*t, t->m_arg);
+            xcode = routine(*t);
         }
 
         t->exit(xcode);  // unless the routine has done it
 
         return NULL;  // unreachable code
     }
-
-    public:
 
     /**
      *  \brief  Start thread
@@ -795,11 +804,9 @@ class thread {
      *  Note that the function throws an exception in case of an attempt
      *  to start the thread multiple times.
      *
-     *  \param  arg  Thread routine argument
-     *
      *  \return \c true if and only if the thread was started
      */
-    bool start(typename Routine::arg_t & arg) throw(std::logic_error, std::runtime_error) {
+    bool start() throw(std::logic_error, std::runtime_error) {
         pthread_attr_t attr;
 
         int pt_st = pthread_attr_init(&attr);
@@ -826,25 +833,29 @@ class thread {
         return false;
     }
 
+    public:
+
     /**
-     *  \brief  Create thread
+     *  \brief  Create thread (default routine argument)
      */
     thread():
         m_impl(0),
         m_status(STATUS_INIT),
-        m_xcode(0) {}
+        m_xcode(0)
+    {
+        start();
+    }
 
     /**
-     *  \brief  Create and start thread
-     *
-     *  \param  arg  Thread routine argument
+     *  \brief  Create thread (passing routine argument)
      */
-    thread(typename Routine::arg_t arg):
+    thread(const typename Routine::arg_t & rarg):
         m_impl(0),
+        m_rarg(rarg),
         m_status(STATUS_INIT),
         m_xcode(0)
     {
-        start(arg);
+        start();
     }
 
     /** Thread status getter */
@@ -880,7 +891,8 @@ class thread {
     inline status_t wait(status_t status = STATUS_DONE) {
         lock4scope(m_mutex);
 
-        if (STATUS_FAILED == m_status) return STATUS_FAILED;
+        // Thread doesn't run
+        if (STATUS_INIT > m_status) return m_status;
 
         while (status > m_status)
             m_st_ch.wait(m_mutex);
@@ -899,7 +911,8 @@ class thread {
     inline status_t wait(double timeout, status_t status = STATUS_DONE) {
         lock4scope(m_mutex);
 
-        if (STATUS_FAILED == m_status) return STATUS_FAILED;
+        // Thread doesn't run
+        if (STATUS_INIT > m_status) return m_status;
 
         // Transitional phase, shouldn't take long
         while (STATUS_INIT == m_status)

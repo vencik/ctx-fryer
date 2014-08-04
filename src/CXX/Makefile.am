@@ -11,3 +11,11 @@ SUBDIRS = \
 # Internal headers
 noinst_HEADERS = \
     config.hxx
+
+lib_LTLIBRARIES = \
+    libctx-fryer.la
+
+libctx_fryer_la_SOURCES =
+
+libctx_fryer_la_LIBADD = \
+    dynamic/libdynamic.la

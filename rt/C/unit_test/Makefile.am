@@ -1,5 +1,5 @@
 # Compiler & linker flags
-AM_CFLAGS  = -Wall -Werror
+AM_CFLAGS  = -g -Wall -Werror
 AM_LDFLAGS = -L../src -lctx-fryer-c-rt -lctx-fryer-c-rt-ut
 
 

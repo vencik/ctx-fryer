@@ -2,4 +2,5 @@ SUBDIRS = \
     container \
     dynamic \
     meta \
-    mt
+    mt \
+    proc

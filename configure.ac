@@ -291,6 +291,7 @@ AC_CONFIG_FILES([
     src/CXX/dynamic/Makefile
     src/CXX/container/Makefile
     src/CXX/mt/Makefile
+    src/CXX/proc/Makefile
     src/CXX/stats/Makefile
     src/CXX/sys/Makefile
     src/CXX/unit_test/Makefile
@@ -298,6 +299,7 @@ AC_CONFIG_FILES([
     src/CXX/unit_test/dynamic/Makefile
     src/CXX/unit_test/meta/Makefile
     src/CXX/unit_test/mt/Makefile
+    src/CXX/unit_test/proc/Makefile
     src/Shell/Makefile
     src/Shell/ctx-fryer-paths.sh
     src/XML/Makefile

@@ -3,6 +3,7 @@ SUBDIRS = \
     dynamic \
     container \
     mt \
+    proc \
     stats \
     sys \
     unit_test
@@ -18,4 +19,5 @@ lib_LTLIBRARIES = \
 libctx_fryer_la_SOURCES =
 
 libctx_fryer_la_LIBADD = \
-    dynamic/libdynamic.la
+    dynamic/libdynamic.la \
+    proc/libproc.la

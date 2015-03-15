@@ -20,4 +20,5 @@ libctx_fryer_la_SOURCES =
 
 libctx_fryer_la_LIBADD = \
     dynamic/libdynamic.la \
-    proc/libproc.la
+    proc/libproc.la \
+    sys/libsys.la

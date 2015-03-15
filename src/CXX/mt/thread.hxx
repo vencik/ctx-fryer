@@ -106,10 +106,12 @@ class POSIX_thread {
                 case 0: break;
 
                 case ENOMEM:
-                    throw std::runtime_error("POSIX thread attributes allocation failed");
+                    throw std::runtime_error(
+                        "mt::POSIX_thread: Thread attributes allocation failed");
 
                 default:
-                    throw std::runtime_error("POSIX thread attributes creation failed");
+                    throw std::runtime_error(
+                        "mt::POSIX_thread: Thread attributes creation failed");
             }
         }
 
@@ -121,10 +123,12 @@ class POSIX_thread {
                 case 0: break;
 
                 case ENOMEM:
-                    throw std::runtime_error("POSIX thread attributes deallocation failed");
+                    throw std::runtime_error(
+                        "mt::POSIX_thread: Thread attributes deallocation failed");
 
                 default:
-                    throw std::runtime_error("POSIX thread attributes destruction failed");
+                    throw std::runtime_error(
+                        "mt::POSIX_thread: Thread attributes destruction failed");
             }
         }
 
@@ -133,7 +137,8 @@ class POSIX_thread {
             int status = pthread_attr_setdetachstate(&impl, (int)state);
 
             if (status)
-                throw std::runtime_error("failed to set POSIX thread detach state");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Failed to set thread detach state");
         }
 
         /** Contention scope setter */
@@ -141,7 +146,8 @@ class POSIX_thread {
             int status = pthread_attr_setscope(&impl, (int)scope);
 
             if (status)
-                throw std::runtime_error("failed to set POSIX thread scope");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Failed to set thread scope");
         }
 
         private:
@@ -151,7 +157,8 @@ class POSIX_thread {
             int status = pthread_attr_setinheritsched(&impl, (int)scheme);
 
             if (status)
-                throw std::runtime_error("failed to set POSIX thread scheduling scheme");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Failed to set thread scheduling scheme");
         }
 
         public:
@@ -161,7 +168,8 @@ class POSIX_thread {
             int status = pthread_attr_setschedpolicy(&impl, (int)policy);
 
             if (status)
-                throw std::runtime_error("failed to set POSIX thread scheduling policy");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Failed to set thread scheduling policy");
 
             set_sched_scheme(SCHED_SCHEME_EXPLICIT);
         }
@@ -173,14 +181,16 @@ class POSIX_thread {
             int status = pthread_attr_getschedparam(&impl, &sched_params);
 
             if (status)
-                throw std::runtime_error("failed to get POSIX thread scheduling parameters");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Failed to get thread scheduling parameters");
 
             sched_params.sched_priority = priority;
 
             status = pthread_attr_setschedparam(&impl, &sched_params);
 
             if (status)
-                throw std::runtime_error("failed to set POSIX thread scheduling priority");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Failed to set thread scheduling priority");
 
             set_sched_scheme(SCHED_SCHEME_EXPLICIT);
         }
@@ -190,7 +200,8 @@ class POSIX_thread {
             int status = pthread_attr_setguardsize(&impl, size);
 
             if (status)
-                throw std::runtime_error("failed to set POSIX thread guard size");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: failed to set thread guard size");
         }
 
         /** Stack size setter */
@@ -200,12 +211,14 @@ class POSIX_thread {
             int status = posix_memalign(&sp, sysconf(_SC_PAGESIZE), size);
 
             if (status)
-                throw std::runtime_error("failed to align POSIX thread stack memory");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Failed to align thread stack memory");
 
             status = pthread_attr_setstack(&impl, sp, size);
 
             if (status)
-                throw std::runtime_error("failed to set POSIX thread stack");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Failed to set thread stack");
         }
 
     };  // end of class attr
@@ -220,23 +233,29 @@ class POSIX_thread {
      *  \param  main   Thread routine
      *  \param  arg    Thread routine argument (to be passed to \c pthread_create)
      */
-    void start(const attr & attrs, void * (* main)(void * ), void * arg) throw(std::runtime_error) {
+    void start(const attr & attrs, void * (* main)(void * ), void * arg)
+        throw(std::runtime_error)
+    {
         int status = pthread_create(&m_impl, &attrs.impl, main, arg);
 
         switch (status) {
             case 0: break;
 
             case EAGAIN:
-                throw std::runtime_error("system resources insufficient to create POSIX thread");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: System resources insufficient to create thread");
 
             case EINVAL:
-                throw std::runtime_error("invalid POSIX thread attributes");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Invalid thread attributes");
 
             case EPERM:
-                throw std::runtime_error("POSIX thread creation denied");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Thread creation denied");
 
             default:
-                throw std::runtime_error("POSIX thread creation failed");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Thread creation failed");
         }
     }
 
@@ -290,16 +309,20 @@ class POSIX_thread {
             case 0: break;
 
             case EDEADLK:
-                throw std::runtime_error("POSIX thread deadlock detected");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Thread deadlock detected");
 
             case EINVAL:
-                throw std::runtime_error("can't join POSIX thread");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Can't join thread");
 
             case ESRCH:
-                throw std::runtime_error("POSIIX thread not found");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Thread not found");
 
             default:
-                throw std::runtime_error("failed to join POSIX thread");
+                throw std::runtime_error(
+                    "mt::POSIX_thread: Failed to join thread");
         }
     }
 
@@ -324,7 +347,8 @@ class POSIX_thread {
         int status = pthread_cancel(m_impl);
 
         if (status)
-            throw std::runtime_error("failed to cancel POSIX thread");
+            throw std::runtime_error(
+                "mt::POSIX_thread: Failed to cancel thread");
     }
 
     static const void * CANCELED;  /**< Canceled POSIX thread return value */
@@ -334,7 +358,8 @@ class POSIX_thread {
         cancel();
 
         if (CANCELED != join())
-            throw std::runtime_error("unexpected canceled POSIX thread return value");
+            throw std::runtime_error(
+                "mt::POSIX_thread: Unexpected canceled thread return value");
     }
 
     /**
@@ -352,12 +377,14 @@ class POSIX_thread {
         int status = pthread_setcancelstate(state, &old);
 
         if (status)
-            throw std::runtime_error("failed to set POSIX thread cancelation state");
+            throw std::runtime_error(
+                "mt::POSIX_thread: Failed to set thread cancelation state");
 
         status = pthread_setcanceltype((int)type, &old);
 
         if (status)
-            throw std::runtime_error("failed to set POSIX thread cancelation type");
+            throw std::runtime_error(
+                "mt::POSIX_thread: Failed to set thread cancelation type");
     }
 
     /**
@@ -382,7 +409,8 @@ class POSIX_thread {
         int status = pthread_detach(m_impl);
 
         if (status)
-            throw std::runtime_error("failed to detach POSIX thread");
+            throw std::runtime_error(
+                "mt::POSIX_thread: Failed to detach thread");
     }
 
     /**
@@ -390,7 +418,9 @@ class POSIX_thread {
      *
      *  \param  retval  Thread return value
      */
-    static inline void exit(void * retval = NULL) throw() { pthread_exit(retval); }
+    inline static void exit(void * retval = NULL) throw() {
+        pthread_exit(retval);
+    }
 
 };  // end of class POSIX_thread
 
@@ -598,10 +628,12 @@ class threadpool {
     {
         // Sanity checks
         if (!(lo <= hi))
-            throw std::range_error("threadpool limits illegal");
+            throw std::range_error(
+                "mt::threadpool: Limits illegal");
 
         if (!(lo <= avail && avail <= hi))
-            throw std::range_error("threadpool preallocation illegal");
+            throw std::range_error(
+                "mt::threadpool: Preallocation illegal");
 
         // Preallocate workers
         for (size_t i = 0; i < avail; ++i)
@@ -658,7 +690,7 @@ class threadpool {
      *  \retval JOB_SCHED_WAIT      no thread is available at the moment,
      *                              the job will have to wait in queue
      */
-    inline job_sched_t run(const job & j) {
+    job_sched_t run(const job & j) {
         do {  // pragmatic do ... while (0) loop allowing for break
             lock4scope(m_mutex);
 
@@ -710,11 +742,12 @@ class thread {
     public:
 
     enum status_t {
-        STATUS_FAILED  = -1,  /**< Thread failed to start */
-        STATUS_INIT    =  0,  /**< Thread was initialised */
-        STATUS_RUN,           /**< Thread routine runs    */
-        STATUS_DONE,          /**< Thread has finished    */
-        STATUS_DETACHED       /**< Thread is detached     */
+        STATUS_FAILED  = -1,  /**< Thread failed to start  */
+        STATUS_INIT    =  0,  /**< Thread was initialised  */
+        STATUS_STARTUP,       /**< Thread is being started */
+        STATUS_RUN,           /**< Thread routine runs     */
+        STATUS_DONE,          /**< Thread has finished     */
+        STATUS_DETACHED       /**< Thread is detached      */
     };  // end of enum status_t
 
     private:
@@ -726,10 +759,25 @@ class thread {
     mutable mutex           m_mutex;   /**< Operation mutex          */
     condition               m_st_ch;   /**< Status change condition  */
 
+    /**
+     *  \brief  Status setter
+     *
+     *  Sets status and broadcasts the action.
+     *
+     *  IMPORTANT NOTE:
+     *  Must be done under the \c m_mutex locked!
+     *
+     *  \param  status  Status set
+     */
+    inline void set_status(status_t status) {
+        m_status = status;
+        m_st_ch.broadcast();
+    }
+
     public:
 
     /** Thread id */
-    unsigned long id() const { return (unsigned int)m_impl; }
+    unsigned long id() const { return (unsigned long)m_impl; }
 
     /** Routine argument getter */
     typename Routine::arg_t & routine_argument() { return m_rarg; }
@@ -750,12 +798,12 @@ class thread {
 
             // Sanity check
             if (m_impl != tid)
-                throw std::logic_error("invalid thread exit");
+                throw std::logic_error(
+                    "mt::thread: Invalid thread exit");
 
-            m_xcode  = xcode;
-            m_status = STATUS_DONE;
+            m_xcode = xcode;
 
-            m_st_ch.broadcast();
+            set_status(STATUS_DONE);
         }
 
         pthread_exit(NULL);
@@ -780,9 +828,7 @@ class thread {
         {
             lock4scope(t->m_mutex);
 
-            t->m_status = STATUS_RUN;
-
-            t->m_st_ch.broadcast();
+            t->set_status(STATUS_RUN);
         }
 
         {   // Routine instance life is limited to this block
@@ -796,24 +842,43 @@ class thread {
         return NULL;  // unreachable code
     }
 
+    public:
+
     /**
      *  \brief  Start thread
      *
      *  The function starts a new POSIX thread.
+     *  If the thread was already started, nothing happens
+     *  (i.e. the function may be called multiple times;
+     *  the thread being only started once, of course).
      *
-     *  Note that the function throws an exception in case of an attempt
-     *  to start the thread multiple times.
+     *  Note that the function throws an exception in case
+     *  previous startup of the tread failed.
      *
      *  \return \c true if and only if the thread was started
      */
     bool start() throw(std::logic_error, std::runtime_error) {
+        {
+            lock4scope(m_mutex);
+
+            if (STATUS_FAILED == m_status)
+                throw std::runtime_error(
+                    "mt::thread: Invalid thread start");
+
+            // Already started
+            if (STATUS_STARTUP <= m_status) return true;
+
+            assert(STATUS_INIT == m_status);
+
+            set_status(STATUS_STARTUP);  // starting
+        }
+
         pthread_attr_t attr;
 
         int pt_st = pthread_attr_init(&attr);
 
         while (0 == pt_st) {  // pragmatic loop allowing for breaks
             pt_st = pthread_create(&m_impl, &attr, &main, this);
-
             if (0 != pt_st) break;
 
             pt_st = pthread_attr_destroy(&attr);  // TODO: process status (?)
@@ -821,41 +886,46 @@ class thread {
             return true;
         }
 
-        // Failed to start thread
-        lock4scope(m_mutex);
-
         // Handle memory failure with exception
         if (ENOMEM == pt_st)
-            throw std::runtime_error("failed to init POSIX thread attributes");
+            throw std::runtime_error(
+                "mt::thread: Failed to init thread attributes");
 
-        m_status = STATUS_FAILED;
-
+        // Failed to start thread
+        lock4scope(m_mutex);
+        set_status(STATUS_FAILED);
         return false;
     }
 
-    public:
-
     /**
      *  \brief  Create thread (default routine argument)
+     *
+     *  \param  do_start  Whether to start the thread
      */
-    thread():
+    thread(bool do_start = true):
         m_impl(0),
         m_status(STATUS_INIT),
         m_xcode(0)
     {
-        start();
+        if (do_start) start();
     }
 
     /**
      *  \brief  Create thread (passing routine argument)
+     *
+     *  \param  rarg      Thread routine argument
+     *  \param  do_start  Whether to start the thread
      */
-    thread(const typename Routine::arg_t & rarg):
+    thread(
+        const typename Routine::arg_t & rarg,
+        bool                            do_start = true)
+    :
         m_impl(0),
         m_rarg(rarg),
         m_status(STATUS_INIT),
         m_xcode(0)
     {
-        start();
+        if (do_start) start();
     }
 
     /** Thread status getter */
@@ -876,7 +946,8 @@ class thread {
         lock4scope(m_mutex);
 
         if (STATUS_DONE != m_status)
-            throw std::logic_error("thread routine didn't finish");
+            throw std::logic_error(
+                "mt::thread: Routine didn't finish");
 
         return m_xcode;
     }
@@ -884,15 +955,24 @@ class thread {
     /**
      *  \brief  Wait until thread finishes
      *
+     *  Note that the function will throw an exception
+     *  if the thread is not valid.
+     *
      *  \param  status  Status for which to wait (optional)
      *
      *  \return Thread status when done waiting
      */
-    inline status_t wait(status_t status = STATUS_DONE) {
+    status_t wait(status_t status = STATUS_DONE)
+        throw(std::logic_error)
+    {
         lock4scope(m_mutex);
 
+        if (STATUS_FAILED == m_status)
+            throw std::logic_error(
+                "mt::thread: Invalid thread wait");
+
         // Thread doesn't run
-        if (STATUS_INIT > m_status) return m_status;
+        if (STATUS_STARTUP > m_status) return m_status;
 
         while (status > m_status)
             m_st_ch.wait(m_mutex);
@@ -903,19 +983,28 @@ class thread {
     /**
      *  \brief  Wait until thread finishes
      *
+     *  Note that the function will throw an exception
+     *  if the thread is not valid.
+     *
      *  \param  timeout  Waiting timeout
      *  \param  status   Status for which to wait (optional)
      *
      *  \return Thread status when done waiting
      */
-    inline status_t wait(double timeout, status_t status = STATUS_DONE) {
+    status_t wait(double timeout, status_t status = STATUS_DONE)
+        throw(std::logic_error)
+    {
         lock4scope(m_mutex);
 
+        if (STATUS_FAILED == m_status)
+            throw std::logic_error(
+                "mt::thread: Invalid thread timeout wait");
+
         // Thread doesn't run
-        if (STATUS_INIT > m_status) return m_status;
+        if (STATUS_STARTUP > m_status) return m_status;
 
         // Transitional phase, shouldn't take long
-        while (STATUS_INIT == m_status)
+        while (STATUS_STARTUP == m_status)
             m_st_ch.wait(m_mutex);
 
         if (status > m_status)
@@ -932,15 +1021,17 @@ class thread {
      *
      *  \return \c true if and only if the operation succeeded
      */
-    inline bool join() throw(std::logic_error) {
-        lock4scope(m_mutex);
+    bool join() throw(std::logic_error) {
+        {
+            lock4scope(m_mutex);
 
-        if (STATUS_FAILED == m_status || STATUS_DETACHED == m_status)
-            throw std::logic_error("invalid or double POSIX thread join");
+            if (STATUS_FAILED == m_status || STATUS_DETACHED == m_status)
+                throw std::logic_error(
+                    "mt::thread: Invalid thread join");
+        }
 
         void * retval;
-        int pt_st = pthread_join(&m_impl, &retval);
-
+        int pt_st = pthread_join(m_impl, &retval);
         return 0 == pt_st;
     }
 
@@ -952,18 +1043,20 @@ class thread {
      *
      *  \return \c true if and only if the operation succeeded
      */
-    inline bool detach() throw(std::logic_error) {
-        lock4scope(m_mutex);
+    bool detach() throw(std::logic_error) {
+        {
+            lock4scope(m_mutex);
 
-        if (STATUS_FAILED == m_status || STATUS_DETACHED == m_status)
-            throw std::logic_error("invalid or double POSIX thread detachment");
+            if (STATUS_FAILED == m_status || STATUS_DETACHED == m_status)
+                throw std::logic_error(
+                    "mt::thread: Invalid thread detachment");
+        }
 
-        int pt_st = pthread_detach(&m_impl);
-
+        int pt_st = pthread_detach(m_impl);
         if (0 != pt_st) return false;
 
-        m_status = STATUS_DETACHED;
-
+        lock4scope(m_mutex);
+        set_status(STATUS_DETACHED);
         return true;
     }
 

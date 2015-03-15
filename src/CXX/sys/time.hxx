@@ -45,6 +45,50 @@ class timer {
         realtime  = CLOCK_REALTIME,   /**< Realtime  clock */
     };
 
+    /** Timezone */
+    enum timezone_t {
+        localtime = -1,    /** Local time */
+        UTC       =  0,    /** UTC (GMT)  */
+        GMT       =  UTC,  /** UTC (GMT)  */
+    };
+
+    /** Unpacked time */
+    class time {
+        friend class timer;
+
+        public:
+
+        const unsigned year;    /**< Year                       */
+        const unsigned month;   /**< Month (1 - 12)             */
+        const unsigned day;     /**< Day of month (1 - 31)      */
+        const unsigned hour;    /**< Hour (0 - 23)              */
+        const unsigned minute;  /**< Minute (0 - 59)            */
+        const unsigned second;  /**< Second (0 - 59)            */
+        const unsigned nsec;    /**< Nanosecond (0 - 999999999) */
+
+        private:
+
+        /** Constructor */
+        time(
+            unsigned _year,
+            unsigned _month,
+            unsigned _day,
+            unsigned _hour,
+            unsigned _minute,
+            unsigned _second,
+            unsigned _nsec)
+        :
+            year   ( _year   ),
+            month  ( _month  ),
+            day    ( _day    ),
+            hour   ( _hour   ),
+            minute ( _minute ),
+            second ( _second ),
+            nsec   ( _nsec   )
+        {}
+
+    };  // struct time
+
     private:
 
     const clock_t   m_clock;  /**< Used clock */
@@ -100,6 +144,15 @@ class timer {
 
     /** \c struct \c timespec getter (for system operations) */
     inline operator const struct timespec * () { return &m_stamp; }
+
+    /**
+     *  \brief  Get current time (unpacked)
+     *
+     *  \param  timezone  Timezone (GMT/UTC or localtime)
+     *
+     *  \return Current time
+     */
+    static time current_time(timezone_t timezone) throw(std::logic_error);
 
 };  // end of class timer
 

@@ -1,8 +1,10 @@
 noinst_HEADERS = \
-    daemon.hxx
+    daemon.hxx \
+    log.hxx
 
 noinst_LTLIBRARIES = \
     libproc.la
 
 libproc_la_SOURCES = \
-    daemon.cxx
+    daemon.cxx \
+    log.cxx

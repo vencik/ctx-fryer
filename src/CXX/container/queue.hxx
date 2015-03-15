@@ -28,7 +28,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.hxx"
 #include "heap.hxx"
+
+#include "meta/postpone.hxx"
 
 #include <list>
 #include <stdexcept>
@@ -68,17 +71,23 @@ class queue {
      *  The function provides the queue head item and removes it.
      *  Note that the operation requires item copying.
      *
+     *  \param  item  Popped item
+     *
      *  \retval true  on success
      *  \retval false if the queue is empty
      */
     inline bool pop(T & item) {
         if (empty()) return false;
 
-        typename impl_t::iterator h = m_impl.begin();
+        auto begin = m_impl.begin();
 
-        item = *h;
+#ifdef HAVE_CXX11
+        item = std::move(*begin);
+#else
+        item = *begin;
+#endif  // end of #ifdef HAVE_CXX11
 
-        m_impl.erase(h);
+        m_impl.erase(begin);
 
         return true;
     }
@@ -102,6 +111,16 @@ class queue {
      *  \param  item  New queue tail
      */
     inline void push(const T & item) { m_impl.push_back(item); }
+
+#ifdef HAVE_CXX11
+    /**
+     *  \brief  Push new item to queue (tail)
+     *
+     *  \param  args  Item constructor arguments
+     */
+    template <typename... Args>
+    inline void push(Args... args) { m_impl.emplace_back(args...); }
+#endif  // end of #ifdef HAVE_CXX11
 
 };  // end of template class queue
 

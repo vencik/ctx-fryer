@@ -57,7 +57,7 @@ static void test_daemon(
 
 
 /** Daemon unit tests */
-int main_impl(int argc, char * const argv[]) {
+static int main_impl(int argc, char * const argv[]) {
     if (3 != argc) {
         std::cerr
             << "Usage: $0 <pid_file> <sig_pipe>"

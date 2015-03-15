@@ -47,6 +47,10 @@ namespace meta {
  *  passing it a functor (or, ideally, lambda function) that will be executed
  *  upon the object destruction.
  *
+ *  Example:
+ *   auto do_at_eos = []() { some_code(); }
+ *   postpone4scope(do_at_eos);
+ *
  *  \param  fn  Functor
  */
 #define postpone4scope(fn) \

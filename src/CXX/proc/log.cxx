@@ -116,8 +116,8 @@ std::pair<char *, size_t> logger_fe::log_line(
         m_gmt ? sys::timer::GMT : sys::timer::localtime);
     len += 30;
 
-    // Function as in "in main() "
-    len += ::strlen(func) + 6;
+    // Function as in "in main "
+    len += ::strlen(func) + 4;
 
     // Source position as in "at foo.cxx:321"
     len += ::strlen(file) + ::strlen(line) + 4;
@@ -135,7 +135,7 @@ std::pair<char *, size_t> logger_fe::log_line(
         /* Log level  */  "%s "
         /* Identifier */  "%s.%s%s%s "
         /* Time       */  "on %04d/%02d/%02d %02d:%02d:%02d.%-6d "
-        /* Function   */  "in %s() "
+        /* Function   */  "in %s "
         /* Position   */  "at %s:%s"
         /* Message    */  ": %s"
         /* New line   */  "\n",
@@ -204,11 +204,13 @@ mt::mutex                 file_logger_be::s_mutex;
 mt::condition             file_logger_be::s_qfull;
 
 
-// Default constructor
-file_logger_be::file_logger_be():
-    log      ( "/dev/stderr" ),
-    m_log_fd ( STDERR_FILENO )
-{}
+// Constructor
+file_logger_be::file_logger_be(const std::string & logfile):
+    log      ( logfile.empty() ? "/dev/stderr" : logfile ),
+    m_log_fd ( -1 )
+{
+    open();
+}
 
 
 // Open log file
@@ -223,9 +225,15 @@ void file_logger_be::open() {
         m_log_fd = STDERR_FILENO;
 
     // Open file
-    else if (0 > (m_log_fd = ::open(log.c_str(), O_APPEND)))
-        throw std::runtime_error(
-            "proc::file_logger_be: failed to open log file");
+    else {
+        m_log_fd = ::open(log.c_str(),
+            O_WRONLY | O_CREAT | O_APPEND,
+            S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+
+        if (0 > m_log_fd)
+            throw std::runtime_error(
+                "proc::file_logger_be: failed to open log file");
+    }
 }
 
 
@@ -237,6 +245,11 @@ void file_logger_be::close() {
     // Won't close standard FDs
     if (STDOUT_FILENO == m_log_fd) return;
     if (STDERR_FILENO == m_log_fd) return;
+
+    // Flush buffered data
+    if (0 != ::fsync(m_log_fd))
+        throw std::runtime_error(
+            "proc::file_logger_be: failed to flush log file");
 
     // Close file
     if (0 != ::close(m_log_fd))
@@ -286,10 +299,29 @@ void file_logger_be::enqueue_write(
 // Complete writing of a buffer to log file
 int file_logger_be::complete_write(struct aiocb * cb)
 {
-    if (EINPROGRESS == ::aio_error(cb)) return 0;
+    int status = ::aio_error(cb);
 
-    delete[] (char *)cb->aio_buf;
-    return 1;
+    switch (status) {
+        case EINPROGRESS: return 0;  // not done yet
+
+        case 0:          // done
+        case ECANCELED:  // canceled
+            delete[] (char *)cb->aio_buf;
+            return 1;
+
+        default:  // error
+            // TODO: We probably shouldn't tear things down
+            // in case of I/O error...
+            // Should be put in #ifdef DEBUG cond. comp. block or something
+#if (0)
+            fprintf(stderr, "proc::file_logger_be: "
+                    "failed to write buffer to fd %d: %d: %s",
+                    cb->aio_fildes, status, strerror(status));
+#endif
+
+            throw std::runtime_error(
+                "proc::file_logger_be: failed to write buffer");
+    }
 }
 
 

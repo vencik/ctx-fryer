@@ -32,7 +32,7 @@
 
 #include <list>
 #include <algorithm>
-#include <cstdlib>
+#include <string>
 
 
 /** Logging worker */
@@ -59,7 +59,11 @@ class logging_worker {
         // Log messages
         unsigned msg_cnt = thread.routine_argument().second;
         for (unsigned i = 0; i < msg_cnt; ++i) {
+            // These should be logged
             info("Worker " << thread.id() << " message " << i);
+
+            // THese should be omitted
+            debug("Worker " << thread.id() << " message " << i);
         }
 
         return 0;  // OK
@@ -71,18 +75,20 @@ class logging_worker {
 /**
  *  \brief  Logger unit test
  *
+ *  \param  log_file     Log file
  *  \param  thread_cnt   Number of logging threads
  *  \param  message_cnt  Number of messages each thread logs
  *
  *  @return Exit code
  */
 static int logger_test(
-    unsigned thread_cnt,
-    unsigned message_cnt)
+    const std::string & log_file,
+    unsigned            thread_cnt,
+    unsigned            message_cnt)
 {
     // Start logger
-    proc::file_logger logger;
-    logger.level(proc::logger::INFO);
+    proc::file_logger logger("UnitTest", log_file);
+    logger.level(proc::logger::INFO);  // INFO level threshold
 
     // Start logging threads
     std::list<logging_worker::thread_t> logging_threads;
@@ -100,9 +106,9 @@ static int logger_test(
 
 /** Logger unit tests */
 static int main_impl(int argc, char * const argv[]) {
-    if (3 != argc) {
+    if (4 != argc) {
         std::cerr
-            << "Usage: $0 <thread_cnt> <message_cnt>"
+            << "Usage: $0 <thread_cnt> <message_cnt> <log_file>"
             << std::endl;
 
         return 1;
@@ -112,7 +118,7 @@ static int main_impl(int argc, char * const argv[]) {
     unsigned message_cnt = ::atoi(argv[2]);
 
     // Run logger UT
-    return logger_test(thread_cnt, message_cnt);
+    return logger_test(argv[3], thread_cnt, message_cnt);
 }
 
 /** Exception-safeness wrapper */

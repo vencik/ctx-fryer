@@ -447,20 +447,12 @@ class file_logger_be {
 
     public:
 
-    /** Default constructor (logs to STDERR) */
-    file_logger_be();
-
     /**
      *  \brief  Constructor
      *
-     *  \param  logfile  Log file path
+     *  \param  logfile  Log file path (/dev/stderr by default)
      */
-    file_logger_be(const std::string & logfile):
-        log      ( logfile ),
-        m_log_fd ( -1      )
-    {
-        open();
-    }
+    file_logger_be(const std::string & logfile = "");
 
     /**
      *  \brief  Enqueue message buffer
@@ -514,14 +506,14 @@ class file_logger: public logger {
      *  \brief  Constructor
      *
      *  \param  id        Logger ID
-     *  \param  file      Log file path
+     *  \param  file      Log file path (STDERR by default)
      *  \param  level     Initial log level
      *  \param  gmt       GMT timezone flag (localtime otherwise)
      *  \param  do_start  Whether to start the logger straight away
      */
     file_logger(
         const std::string & id,
-        const std::string & file,
+        const std::string & file     = "",
         logger::level_t     level    = logger::ERROR,
         bool                gmt      = true,
         bool                do_start = true);
